@@ -1,381 +1,180 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>現代前線：陣地攻防戰【軍事指揮官版】</title>
+    <title>線上點餐與定位系統</title>
+    <!-- Tailwind CSS 樣式 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>
-        .font-serif-zh { font-family: 'Noto Serif TC', serif; }
-        .military-gradient {
-            background: linear-gradient(135deg, #121812 0%, #1c261c 50%, #0d120d 100%);
-            border: 1px solid rgba(74, 222, 128, 0.3);
-        }
-        .btn-military {
-            background: linear-gradient(145deg, #1b2e1b, #0f1a0f);
-            border: 2px solid rgba(74, 222, 128, 0.5);
-            transition: all 0.2s ease;
-        }
-        .btn-military:hover {
-            border-color: #4ade80;
-            box-shadow: 0 0 20px rgba(74, 222, 128, 0.4);
-            transform: translateY(-2px);
-        }
-        .screen { display: none; }
-        .screen.active { display: flex !important; }
-        .toast {
-            transition: all 0.3s ease;
-            transform: translate(-50%, -50px);
-            opacity: 0;
-            pointer-events: none;
-        }
-        .toast.show {
-            transform: translate(-50%, 0);
-            opacity: 1;
-        }
-    </style>
+    <!-- Leaflet 地圖 CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet 地圖 JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
-<body class="bg-[#050805] text-gray-200 font-sans h-screen flex flex-col justify-between overflow-hidden selection:bg-green-500 selection:text-black">
+<body class="bg-gray-100 font-sans">
 
-    <!-- 頂端提示標語 -->
-    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 border-2 border-green-500 px-6 py-2.5 rounded-xl shadow-2xl text-green-400 font-bold text-sm tracking-widest flex items-center gap-2">
-        <span>⚡</span> <span id="toast-msg">前線指揮部已就緒</span>
-    </div>
-
-    <!-- 遊戲主大廳 -->
-    <div id="screen-lobby" class="screen active absolute inset-0 z-20 flex-col justify-between items-center px-8 py-6 bg-[#050805]">
-        <div class="w-full max-w-6xl flex justify-between items-center border-b border-green-500/20 pb-4 pt-4">
-            <div>
-                <p class="text-xs uppercase tracking-[0.3em] text-green-500 font-bold">MILITARY COMMAND HQ</p>
-                <h1 class="font-serif-zh text-2xl text-white font-bold">現代前線：陣地攻防戰</h1>
-            </div>
-            <div class="flex items-center gap-6 text-sm">
-                <span class="text-green-400">軍費資源: <strong id="lobby-funds" class="text-white text-lg">2500</strong> 💰</span>
-                <span class="text-amber-400">當前軍銜: <strong id="lobby-rank" class="text-white">二等兵</strong></span>
-            </div>
-        </div>
-
-        <div class="w-full max-w-5xl my-auto space-y-8">
-            <div class="text-center space-y-2">
-                <h2 class="font-serif-zh text-3xl text-green-400 font-bold tracking-wider">指揮官，敵軍正向防線發動總攻！</h2>
-                <p class="text-xs text-gray-400">佈署機槍塔與裝甲防線、呼叫空襲支援，抵禦敵軍 10 波無情衝鋒，晉升五星上將！</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div onclick="startBattle()" class="btn-military p-6 rounded-2xl text-center space-y-3 cursor-pointer">
-                    <div class="text-4xl">⚔️</div>
-                    <h3 class="font-serif-zh text-xl text-green-300 font-bold">進入前線陣地防守</h3>
-                    <p class="text-xs text-gray-400">抵禦敵軍波次，賺取軍費與軍銜積分。</p>
-                </div>
-                <div onclick="openModal('armory-modal')" class="btn-military p-6 rounded-2xl text-center space-y-3 cursor-pointer">
-                    <div class="text-4xl">🛡️</div>
-                    <h3 class="font-serif-zh text-xl text-green-300 font-bold">防線裝備與火力解鎖</h3>
-                    <p class="text-xs text-gray-400">解鎖更高等級的重型武器與陣地護盾。</p>
-                </div>
-                <div onclick="openModal('intel-modal')" class="btn-military p-6 rounded-2xl text-center space-y-3 cursor-pointer">
-                    <div class="text-4xl">📋</div>
-                    <h3 class="font-serif-zh text-xl text-green-300 font-bold">軍情與軍銜檔案</h3>
-                    <p class="text-xs text-gray-400">查看您的軍階晉升記錄與敵軍兵種情報。</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="w-full pb-2 text-center text-xs text-gray-600 tracking-widest">
-            MODERN FRONTLINE: DEFENSE COMMAND (2026)
-        </div>
-    </div>
-
-    <!-- 戰鬥畫面 -->
-    <div id="screen-battle" class="screen absolute inset-0 z-30 flex-col justify-between bg-[#030503]">
-        <header class="flex justify-between items-center px-10 py-5 border-b border-green-500/20 bg-zinc-950/80">
-            <div class="space-y-1">
-                <button onclick="returnToLobby()" class="text-xs text-gray-400 hover:text-green-400 font-bold">← 放棄陣地返回</button>
-                <div class="text-xs text-green-400 font-bold">陣地防禦力</div>
-                <div class="w-48 h-3 bg-zinc-800 rounded-full overflow-hidden border border-green-500/30">
-                    <div id="base-hp-bar" class="w-full h-full bg-green-500 transition-all" style="width: 100%;"></div>
-                </div>
-                <div id="base-hp-text" class="text-xs text-gray-400">100 / 100</div>
-            </div>
-            <div class="text-center space-y-1">
-                <h2 id="wave-title" class="font-serif-zh text-xl text-white font-bold">第 1 波：敵軍步兵突擊</h2>
-                <div class="text-xs text-amber-400">⚡ 戰術空襲能量: <span id="energy-text" class="font-bold text-lg">0</span> / 100</div>
-            </div>
-            <div class="text-right space-y-1">
-                <div class="text-xs text-green-400 font-bold">剩餘可用軍費</div>
-                <div id="battle-funds" class="text-xl font-bold text-white">2500 💰</div>
-                <button onclick="callAirStrike()" id="airstrike-btn" disabled class="px-3 py-1 bg-zinc-800 text-gray-500 text-xs font-bold rounded-lg cursor-not-allowed">🔥 呼叫空襲支援</button>
-            </div>
+    <div class="container mx-auto max-w-4xl p-4">
+        <!-- 標題 -->
+        <header class="bg-white shadow rounded-lg p-4 mb-4 text-center">
+            <h1 class="text-2xl font-bold text-gray-800">🍔 線上點餐與外送定位系統</h1>
+            <p class="text-sm text-gray-500">選擇餐點並確認您的外送位置</p>
         </header>
 
-        <!-- 戰場主畫面 -->
-        <main class="flex-1 flex flex-col justify-center items-center px-6 relative">
-            <div id="battlefield-status" class="text-center space-y-4 max-w-xl bg-zinc-900/80 border border-green-500/30 p-8 rounded-2xl shadow-2xl">
-                <div class="text-3xl animate-bounce" id="enemy-icon">🛡️🚶‍♂️</div>
-                <h3 id="enemy-name" class="font-serif-zh text-2xl text-red-400 font-bold">敵軍前鋒部隊進逼中</h3>
-                <p id="enemy-desc" class="text-xs text-gray-300">敵方正在集結，準備向我方陣地發動衝鋒！</p>
-                <div class="text-sm font-bold text-amber-300">當前交戰狀態：激烈防守中...</div>
-            </div>
-        </main>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <!-- 左側：菜單與購物車 -->
+            <div class="bg-white shadow rounded-lg p-4 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold mb-3 border-b pb-2">📋 菜單列表</h2>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center border p-2 rounded-lg">
+                            <div>
+                                <h3 class="font-medium">招牌起司漢堡</h3>
+                                <p class="text-sm text-gray-500">$ 150</p>
+                            </div>
+                            <button onclick="addToCart('招牌起司漢堡', 150)" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">加入</button>
+                        </div>
+                        <div class="flex justify-between items-center border p-2 rounded-lg">
+                            <div>
+                                <h3 class="font-medium">黃金脆薯</h3>
+                                <p class="text-sm text-gray-500">$ 60</p>
+                            </div>
+                            <button onclick="addToCart('黃金脆薯', 60)" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">加入</button>
+                        </div>
+                        <div class="flex justify-between items-center border p-2 rounded-lg">
+                            <div>
+                                <h3 class="font-medium">可口可樂</h3>
+                                <p class="text-sm text-gray-500">$ 40</p>
+                            </div>
+                            <button onclick="addToCart('可口可樂', 40)" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">加入</button>
+                        </div>
+                    </div>
 
-        <!-- 底部防線佈署控制台 -->
-        <footer class="p-6 bg-zinc-950/90 border-t border-green-500/20">
-            <div class="max-w-5xl mx-auto flex flex-col items-center gap-4">
-                <div class="text-xs text-gray-400 uppercase tracking-widest font-bold">前線防線佈署與反擊指令</div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
-                    <button onclick="deployTower('infantry')" class="btn-military p-4 rounded-xl text-left space-y-1 cursor-pointer">
-                        <div class="text-xs text-green-400 font-bold">步兵火力班 (成本: 150)</div>
-                        <div class="text-sm text-white font-bold">散兵防線</div>
-                        <div class="text-[11px] text-gray-400">對輕步兵造成高額傷害</div>
-                    </button>
-                    <button onclick="deployTower('machinegun')" class="btn-military p-4 rounded-xl text-left space-y-1 cursor-pointer">
-                        <div class="text-xs text-green-400 font-bold">重機槍陣地 (成本: 300)</div>
-                        <div class="text-sm text-white font-bold">堡壘重機槍</div>
-                        <div class="text-[11px] text-gray-400">持續壓制敵軍步兵衝鋒</div>
-                    </button>
-                    <button onclick="deployTower('antitank')" class="btn-military p-4 rounded-xl text-left space-y-1 cursor-pointer">
-                        <div class="text-xs text-green-400 font-bold">反裝甲火箭筒 (成本: 500)</div>
-                        <div class="text-sm text-white font-bold">穿甲火箭</div>
-                        <div class="text-[11px] text-gray-400">專門克制裝甲車與重型坦克</div>
-                    </button>
-                    <button onclick="deployTower('armor')" class="btn-military p-4 rounded-xl text-left space-y-1 cursor-pointer">
-                        <div class="text-xs text-green-400 font-bold">主戰坦克車 (成本: 800)</div>
-                        <div class="text-sm text-white font-bold">鋼鐵壁壘</div>
-                        <div class="text-[11px] text-gray-400">全方位高防禦與毀滅打擊</div>
-                    </button>
+                    <h2 class="text-lg font-semibold mt-6 mb-3 border-b pb-2">🛒 購物車</h2>
+                    <ul id="cart-list" class="text-sm text-gray-600 space-y-1 mb-3 min-h-[50px]">
+                        <li class="text-gray-400">目前購物車是空的</li>
+                    </ul>
+                    <div class="font-bold text-right mb-4">總金額：$ <span id="total-price">0</span></div>
                 </div>
-            </div>
-        </footer>
-    </div>
 
-    <!-- 彈窗群組 -->
-    <div id="armory-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden justify-center items-center">
-        <div class="max-w-2xl w-full bg-zinc-900 border-2 border-green-500/50 p-8 rounded-2xl space-y-6 text-left">
-            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
-                <h3 class="font-serif-zh text-2xl text-green-400 font-bold">🛡️ 防線裝備研發中心</h3>
-                <button onclick="closeModal('armory-modal')" class="text-gray-400 hover:text-white text-xl">✕</button>
+                <button onclick="submitOrder()" class="w-full bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600">送出訂單</button>
             </div>
-            <div class="space-y-3 text-xs text-gray-300">
-                <div class="p-4 bg-zinc-950 border border-zinc-800 rounded-xl flex justify-between items-center">
-                    <div><strong class="text-green-300 text-sm">奈米強化陣地護盾</strong><div class="text-gray-400">永久增加陣地最大血量 +50</div></div>
-                    <button onclick="upgradeBaseHp()" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-black font-bold rounded-lg">研發 (1000 💰)</button>
-                </div>
-                <div class="p-4 bg-zinc-950 border border-zinc-800 rounded-xl flex justify-between items-center">
-                    <div><strong class="text-green-300 text-sm">雷達空襲效率優化</strong><div class="text-gray-400">空襲能量蓄積速度加快 20%</div></div>
-                    <button onclick="upgradeAirStrike()" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-black font-bold rounded-lg">研發 (1500 💰)</button>
+
+            <!-- 右側：地圖與定位 -->
+            <div class="bg-white shadow rounded-lg p-4 flex flex-col">
+                <h2 class="text-lg font-semibold mb-3 border-b pb-2">📍 外送定位系統</h2>
+                <p class="text-xs text-gray-500 mb-2">點擊下方按鈕自動取得您的GPS位置，或直接在地圖上點擊來修改外送位置。</p>
+                
+                <button onclick="locateUser()" class="bg-indigo-500 text-white py-1.5 px-3 rounded text-sm mb-3 hover:bg-indigo-600">自動取得目前GPS位置</button>
+                
+                <!-- 地圖容器 -->
+                <div id="map" class="w-full h-64 rounded-lg border flex-grow"></div>
+                
+                <div class="mt-3 text-xs text-gray-600">
+                    <p>目前選擇座標：</p>
+                    <p class="font-mono bg-gray-50 p-1 rounded mt-1 border">緯度: <span id="lat-val">未取得</span>, 經度: <span id="lng-val">未取得</span></p>
                 </div>
             </div>
-            <button onclick="closeModal('armory-modal')" class="w-full py-3 bg-zinc-800 text-white font-bold rounded-xl text-xs">返回大廳</button>
+
         </div>
     </div>
 
-    <div id="intel-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden justify-center items-center">
-        <div class="max-w-xl w-full bg-zinc-900 border-2 border-green-500/50 p-8 rounded-2xl space-y-6 text-left">
-            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
-                <h3 class="font-serif-zh text-2xl text-green-400 font-bold">📋 指揮官軍情檔案</h3>
-                <button onclick="closeModal('intel-modal')" class="text-gray-400 hover:text-white text-xl">✕</button>
-            </div>
-            <div class="space-y-3 text-xs text-gray-300">
-                <div>目前軍銜：<strong id="intel-rank-name" class="text-amber-400 text-sm">二等兵</strong></div>
-                <div>擊退敵軍波次：<strong id="intel-waves" class="text-green-400 text-sm">0 波</strong></div>
-                <p class="text-gray-400 leading-relaxed pt-2">軍銜晉升之路：隨著您在戰場上擊退更多敵軍波次，將依序晉升為：上等兵 ➔ 士官 ➔ 少尉 ➔ 中校 ➔ 將軍 ➔ 五星上將！</p>
-            </div>
-            <button onclick="closeModal('intel-modal')" class="w-full py-3 bg-zinc-800 text-white font-bold rounded-xl text-xs">返回大廳</button>
-        </div>
-    </div>
-
+    <!-- JavaScript 邏輯 -->
     <script>
-        let funds = 2500;
-        let baseHp = 100;
-        let maxBaseHp = 100;
-        let currentWave = 1;
-        let energy = 0;
-        let totalWavesCompleted = 0;
-        let rankIndex = 0;
-        const ranks = ["二等兵", "上等兵", "士官", "少尉", "中校", "將軍", "五星上將"];
+        // 1. 初始化購物車資料
+        let cart = [];
+        let total = 0;
 
-        const enemyWaves = [
-            { name: "第 1 波：敵軍先鋒步兵衝鋒", icon: "🚶‍♂️🚶‍♂️", desc: "輕裝步兵突襲，步兵火力班可造成剋制高額傷害！", hp: 150, dmg: 15, type: "infantry" },
-            { name: "第 2 波：裝甲偵察車部隊", icon: "🚙💨", desc: "高速裝甲車來襲，建議使用反裝甲火箭筒壓制！", hp: 250, dmg: 25, type: "armor" },
-            { name: "第 3 波：重型突擊步兵連", icon: "🪖⚔️", desc: "精銳重步兵推進，火力需全面升級！", hp: 350, dmg: 35, type: "infantry" },
-            { name: "第 4 波：裝甲主力戰車營", icon: "🛡️🚛", desc: "重型坦克突破防線，反裝甲火力為關鍵！", hp: 500, dmg: 45, type: "armor" },
-            { name: "第 5 波：全線機械化總動員", icon: "💥🚜", desc: "敵軍發動總攻，步兵與裝甲車混合衝鋒！", hp: 700, dmg: 60, type: "mixed" },
-            { name: "第 6 波：精銳特種突擊隊", icon: "🥷🔥", desc: "火力兇猛的精銳部隊，陣地告急！", hp: 900, dmg: 70, type: "infantry" },
-            { name: "第 7 波：超級重裝鐵甲師", icon: "⚙️🧱", desc: "堅不可摧的鐵甲巨獸推進中！", hp: 1200, dmg: 85, type: "armor" },
-            { name: "第 8 波：空降機械狂潮", icon: "🚁⚡", desc: "空降裝甲部隊閃電突襲！", hp: 1500, dmg: 100, type: "mixed" },
-            { name: "第 9 波：末日決戰先遣軍", icon: "☢️👹", desc: "距離全面勝利僅剩最後兩波！", hp: 2000, dmg: 120, type: "mixed" },
-            { name: "第 10 波：敵軍統帥終極總攻", icon: "👑🔥", desc: "敵軍最高司令部總動員，誓死守衛前線！", hp: 3000, dmg: 150, type: "mixed" }
-        ];
-
-        let currentEnemy = null;
-
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = msg;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2000);
+        function addToCart(name, price) {
+            cart.push({ name, price });
+            updateCartUI();
         }
 
-        function updateUI() {
-            document.getElementById('lobby-funds').innerText = funds;
-            document.getElementById('lobby-rank').innerText = ranks[rankIndex];
-            document.getElementById('battle-funds').innerText = funds + " 💰";
-            document.getElementById('intel-rank-name').innerText = ranks[rankIndex];
-            document.getElementById('intel-waves').innerText = totalWavesCompleted + " 波";
-        }
+        function updateCartUI() {
+            const cartList = document.getElementById('cart-list');
+            const totalPriceEl = document.getElementById('total-price');
+            cartList.innerHTML = '';
+            total = 0;
 
-        function startBattle() {
-            if (currentWave > enemyWaves.length) currentWave = enemyWaves.length;
-            currentEnemy = JSON.parse(JSON.stringify(enemyWaves[currentWave - 1]));
-            baseHp = maxBaseHp;
-            energy = 0;
-
-            document.getElementById('screen-lobby').classList.remove('active');
-            document.getElementById('screen-battle').classList.add('active');
-
-            document.getElementById('wave-title').innerText = currentEnemy.name;
-            document.getElementById('enemy-icon').innerText = currentEnemy.icon;
-            document.getElementById('enemy-name').innerText = currentEnemy.name;
-            document.getElementById('enemy-desc').innerText = currentEnemy.desc + ` (敵軍血量: ${currentEnemy.hp})`;
-            updateBattleUI();
-            showToast(`進入戰場：${currentEnemy.name}`);
-        }
-
-        function updateBattleUI() {
-            document.getElementById('base-hp-bar').style.width = (baseHp / maxBaseHp) * 100 + '%';
-            document.getElementById('base-hp-text').innerText = `${baseHp} / ${maxBaseHp}`;
-            document.getElementById('energy-text').innerText = energy;
-
-            const airBtn = document.getElementById('airstrike-btn');
-            if (energy >= 100) {
-                airBtn.disabled = false;
-                airBtn.className = "px-3 py-1 bg-amber-600 hover:bg-amber-500 text-black text-xs font-bold rounded-lg cursor-pointer animate-pulse";
-            } else {
-                airBtn.disabled = true;
-                airBtn.className = "px-3 py-1 bg-zinc-800 text-gray-500 text-xs font-bold rounded-lg cursor-not-allowed";
-            }
-        }
-
-        function deployTower(type) {
-            let cost = 0;
-            let damage = 0;
-            let textName = "";
-
-            if (type === 'infantry') { cost = 150; damage = currentEnemy.type === 'infantry' ? 120 : 60; textName = "步兵火力班"; }
-            else if (type === 'machinegun') { cost = 300; damage = currentEnemy.type === 'infantry' ? 220 : 120; textName = "重機槍陣地"; }
-            else if (type === 'antitank') { cost = 500; damage = currentEnemy.type === 'armor' ? 350 : 150; textName = "反裝甲火箭筒"; }
-            else if (type === 'armor') { cost = 800; damage = 450; textName = "主戰坦克車"; }
-
-            if (funds < cost) {
-                showToast("軍費不足，無法佈署防線！");
+            if (cart.length === 0) {
+                cartList.innerHTML = '<li class="text-gray-400">目前購物車是空的</li>';
+                totalPriceEl.textContent = '0';
                 return;
             }
 
-            funds -= cost;
-            energy = Math.min(100, energy + 25);
-            currentEnemy.hp -= damage;
+            cart.forEach((item, index) => {
+                total += item.price;
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center';
+                li.innerHTML = `<span>${item.name}</span> <span>$${item.price}</span>`;
+                cartList.appendChild(li);
+            });
+            totalPriceEl.textContent = total;
+        }
 
-            showToast(`佈署【${textName}】成功！造成 ${damage} 點傷害！`);
-            updateUI();
-            updateBattleUI();
+        // 2. 初始化 Leaflet 地圖 (預設中心點設為台灣台北車站附近)
+        const map = L.map('map').setView([25.0478, 121.5170], 15);
 
-            if (currentEnemy.hp <= 0) {
-                winWave();
+        // 載入 OpenStreetMap 圖資
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        let marker;
+
+        // 設定地圖點擊事件（允許手動微調位置）
+        map.on('click', function(e) {
+            setMarker(e.latlng.lat, e.latlng.lng);
+        });
+
+        function setMarker(lat, lng) {
+            document.getElementById('lat-val').textContent = lat.toFixed(5);
+            document.getElementById('lng-val').textContent = lng.toFixed(5);
+
+            if (marker) {
+                marker.setLatLng([lat, lng]);
             } else {
-                // 敵軍反擊
-                setTimeout(() => {
-                    baseHp = Math.max(0, baseHp - currentEnemy.dmg);
-                    updateBattleUI();
-                    if (baseHp <= 0) {
-                        showToast("陣地失守！返回大廳重整旗鼓...");
-                        setTimeout(() => returnToLobby(), 1500);
-                    }
-                }, 500);
+                marker = L.marker([lat, lng]).addTo(map);
             }
+            map.setView([lat, lng], 16);
         }
 
-        function callAirStrike() {
-            if (energy < 100) return;
-            energy = 0;
-            let strikeDmg = 600;
-            currentEnemy.hp -= strikeDmg;
-            showToast(`🔥 戰術空襲降臨！對敵軍造成 ${strikeDmg} 點毀滅打擊！`);
-            updateBattleUI();
-
-            if (currentEnemy.hp <= 0) {
-                winWave();
-            }
-        }
-
-        function winWave() {
-            totalWavesCompleted++;
-            let rewardFunds = 800 + (currentWave * 200);
-            funds += rewardFunds;
-
-            if (totalWavesCompleted % 2 === 0 && rankIndex < ranks.length - 1) {
-                rankIndex++;
-                showToast(`🎖️ 恭喜晉升軍銜：${ranks[rankIndex]}！`);
+        // 3. 取得使用者 GPS 定位
+        function locateUser() {
+            if (!navigator.geolocation) {
+                alert('您的瀏覽器不支援地理定位功能');
+                return;
             }
 
-            showToast(`🎉 成功擊退 ${currentEnemy.name}！獲得 ${rewardFunds} 💰 軍費！`);
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    setMarker(lat, lng);
+                },
+                (error) => {
+                    alert('無法取得您的定位，請檢查瀏覽器權限或手動在地圖上點擊。');
+                }
+            );
+        }
 
-            currentWave++;
-            if (currentWave > enemyWaves.length) {
-                showToast("👑 恭喜您通關所有 10 波防線！成為五星上將！");
-                setTimeout(() => returnToLobby(), 2000);
-            } else {
-                setTimeout(() => startBattle(), 1500);
+        // 4. 送出訂單模擬
+        function submitOrder() {
+            if (cart.length === 0) {
+                alert('購物車是空的，請先選擇餐點！');
+                return;
             }
-            updateUI();
-        }
+            const lat = document.getElementById('lat-val').textContent;
+            const lng = document.getElementById('lng-val').textContent;
 
-        function upgradeBaseHp() {
-            if (funds >= 1000) {
-                funds -= 1000;
-                maxBaseHp += 50;
-                baseHp = maxBaseHp;
-                updateUI();
-                showToast("🛡️ 陣地護盾研發成功！血量上限提升 50 點！");
-            } else {
-                showToast("軍費不足！");
+            if (lat === '未取得') {
+                alert('請先在地圖上選擇或取得外送定位！');
+                return;
             }
+
+            alert(`訂單送出成功！\n總金額：$${total}\n外送座標：(${lat}, ${lng})\n感謝您的點餐！`);
         }
-
-        function upgradeAirStrike() {
-            if (funds >= 1500) {
-                funds -= 1500;
-                updateUI();
-                showToast("⚡ 空襲雷達優化成功！");
-            } else {
-                showToast("軍費不足！");
-            }
-        }
-function startBattle() {
-            if (currentWave > enemyWaves.length) currentWave = enemyWaves.length;
-            currentEnemy = JSON.parse(JSON.stringify(enemyWaves[currentWave - 1]));
-            baseHp = maxBaseHp;
-            energy = 0;
-
-            document.getElementById('screen-lobby').classList.remove('active');
-            document.getElementById('screen-battle').classList.add('active');
-
-            document.getElementById('wave-title').innerText = currentEnemy.name;
-            document.getElementById('enemy-icon').innerText = currentEnemy.icon;
-            document.getElementById('enemy-name').innerText = currentEnemy.name;
-            document.getElementById('enemy-desc').innerText = currentEnemy.desc + ` (敵軍血量: ${currentEnemy.hp})`;
-            updateBattleUI();
-            showToast(`進入戰場：${currentEnemy.name}`);
-        }
-        function returnToLobby() {
-            document.getElementById('screen-battle').classList.remove('active');
-            document.getElementById('screen-lobby').classList.add('active');
-            updateUI();
-        }
-
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
-
-        updateUI();
     </script>
 </body>
 </html>
