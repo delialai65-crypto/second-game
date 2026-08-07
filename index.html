@@ -350,7 +350,22 @@
                 showToast("軍費不足！");
             }
         }
+function startBattle() {
+            if (currentWave > enemyWaves.length) currentWave = enemyWaves.length;
+            currentEnemy = JSON.parse(JSON.stringify(enemyWaves[currentWave - 1]));
+            baseHp = maxBaseHp;
+            energy = 0;
 
+            document.getElementById('screen-lobby').classList.remove('active');
+            document.getElementById('screen-battle').classList.add('active');
+
+            document.getElementById('wave-title').innerText = currentEnemy.name;
+            document.getElementById('enemy-icon').innerText = currentEnemy.icon;
+            document.getElementById('enemy-name').innerText = currentEnemy.name;
+            document.getElementById('enemy-desc').innerText = currentEnemy.desc + ` (敵軍血量: ${currentEnemy.hp})`;
+            updateBattleUI();
+            showToast(`進入戰場：${currentEnemy.name}`);
+        }
         function returnToLobby() {
             document.getElementById('screen-battle').classList.remove('active');
             document.getElementById('screen-lobby').classList.add('active');
