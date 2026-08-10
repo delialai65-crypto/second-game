@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>終極豪華棒球帝國系統 - 明星賽選秀與特化轉播版 v24.0</title>
+    <title>終極豪華棒球帝國系統 - Vercel部署修正與全功能旗艦版 v25.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
@@ -31,7 +31,7 @@
         <span class="bg-slate-950 text-amber-400 text-xs px-2.5 py-1 rounded-lg uppercase mr-3 font-mono shrink-0">獨家贊助</span>
         <div class="overflow-hidden relative w-full">
             <div class="ad-banner-ticker text-xs md:text-sm font-bold tracking-wider text-white">
-                📢 【極速超跑 台灣總代理】狂賀明星賽與引退盛典開匯！ ｜ ⚾ 【威爾斯棒球護具】強打出擊無極限！ ｜ 🍺 【冰山純生啤酒】觀戰最佳良伴！
+                📢 【極速超跑 台灣總代理】狂賀 Vercel 部署上線！入主即享零頭款！ ｜ ⚾ 【威爾斯棒球護具】強打出擊無極限！ ｜ 🍺 【冰山純生啤酒】觀戰最佳良伴！
             </div>
         </div>
     </div>
@@ -45,13 +45,13 @@
                 </div>
                 <div>
                     <h1 class="text-3xl font-black tracking-tight text-white">DELUXE <span class="text-emerald-400">EMPIRE</span></h1>
-                    <div class="text-xs text-slate-400 font-mono">ALL-STAR DRAFT & SPECIAL BROADCAST v24.0</div>
+                    <div class="text-xs text-slate-400 font-mono">VERCEL STABLE DEPLOY EDITION v25.0</div>
                 </div>
             </div>
             <div class="flex items-center gap-4 bg-slate-900 px-5 py-2.5 rounded-2xl border border-slate-800 shadow-lg">
                 <div>
                     <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">球團資金 / 聲望</div>
-                    <div class="text-base font-black text-amber-400 font-mono">🪙 <span id="player-coins">25,000</span> DP | ⭐ <span id="team-reputation">100</span> 聲望</div>
+                    <div class="text-base font-black text-amber-400 font-mono">🪙 <span id="player-coins">30,000</span> DP | ⭐ <span id="team-reputation">100</span> 聲望</div>
                 </div>
                 <div class="text-right border-l border-slate-800 pl-4">
                     <div class="font-bold text-sm text-emerald-400" id="current-team-name">中信兄弟</div>
@@ -93,7 +93,7 @@
                                 <span id="schedule-title">📅 本週賽程：第 1 場</span>
                                 <span id="matchup-teams" class="text-slate-200">中信兄弟 vs 統一獅</span>
                             </div>
-                            <div class="text-xs text-slate-400">全新升級：點擊明星賽可進入專屬球星票選組合視窗，引退賽與常規賽擁有截然不同的轉播風格與語音風格！</div>
+                            <div class="text-xs text-slate-400">已完整整合：Vercel 穩定單檔架構、明星賽選秀、引退賽感性播報、教練佈陣、10大棒球規則與雙聲道 AI 轉播！</div>
                         </div>
                     </div>
                 </div>
@@ -157,7 +157,7 @@
                 </div>
 
                 <div class="mt-4 pt-3 border-t border-slate-800 text-xs text-slate-400 text-center">
-                    提示：隨時可切換上方分頁進行明星賽球員選秀或引退賽轉播！
+                    提示：將此檔案命名為 `index.html` 部署至 Vercel 即可完美解決 404 錯誤！
                 </div>
             </div>
 
@@ -408,7 +408,7 @@
                         <span id="mvp-tag" class="text-xs text-amber-400 font-mono">🌟 即時 MVP 預測：載入中...</span>
                     </h2>
                     <div id="commentary-box" class="bg-slate-950/90 border border-slate-800 rounded-xl p-3 h-48 overflow-y-auto space-y-2 text-xs font-mono scroll-smooth">
-                        <div class="text-emerald-400 font-bold">[賽事開打] 明星賽選秀與引退賽特化系統已就緒！</div>
+                        <div class="text-emerald-400 font-bold">[賽事開打] Vercel 部署修正版與全功能系統就緒！</div>
                     </div>
                 </div>
             </div>
@@ -430,7 +430,7 @@
         let seasonStage = "regular";
         let currentMatchup = { away: 1, home: 0 };
         let regularGameCount = 1;
-        let playerData = { coins: 25000, reputation: 100 };
+        let playerData = { coins: 30000, reputation: 100 };
 
         let gameState = {
             inning: 1, isTop: true, balls: 0, strikes: 0, outs: 0,
@@ -464,7 +464,6 @@
             activeBtn.classList.remove('text-slate-300');
         }
 
-        // --- ⭐ 明星賽球員選秀彈窗邏輯 ---
         function openAllStarDraftModal() {
             allStarPool = [
                 { name: "大谷翔平", pos: "指定打擊 (DH)", power: 99 },
@@ -541,7 +540,6 @@
             startSpecialMatch('allstar');
         }
 
-        // --- 🎭 啟動特殊賽事轉播 (明星賽 vs 引退賽) ---
         function startSpecialMatch(type) {
             gameState.matchType = type;
             initAudio();
@@ -923,7 +921,7 @@
             else gameState.homeScores[idx] += count;
             
             let t1 = `跑回本壘得分，灌進 ${count} 分！`;
-            let t2 = "火力全開！";
+            let t2 = "得點圈火力全開！";
             addCommentary(`🎉 ${t1}`, 'hit'); addCommentary(t2, 'expert');
             speakDistinctVoices(t1, t2);
         }
@@ -973,16 +971,19 @@
             
             if (gameState.matchType === 'regular') triggerIntermissionAd();
 
+            let totalAway = gameState.awayScores.reduce((a,b)=>a+b, 0);
+            let totalHome = gameState.homeScores.reduce((a,b)=>a+b, 0);
+
             if (!gameState.isTop) gameState.inning++;
             gameState.isTop = !gameState.isTop;
 
-            if (gameState.inning > 9) {
+            if (gameState.inning > 9 && totalAway !== totalHome) {
                 if (spectateTimer) clearInterval(spectateTimer);
                 if (cheerInterval) clearInterval(cheerInterval);
                 endGame();
             } else {
-                let t1 = `進入第 ${gameState.inning} 局`;
-                let t2 = "比賽張力持續升溫。";
+                let t1 = `攻守交替，進入第 ${gameState.inning} 局`;
+                let t2 = "攻守互換，接下來的對決更加刺激。";
                 addCommentary(t1); addCommentary(t2, 'expert');
                 speakDistinctVoices(t1, t2);
             }
@@ -990,15 +991,32 @@
 
         function endGame() {
             gameState.gameOver = true;
-            let t1 = gameState.matchType === 'allstar' ? "明星賽圓滿落幕！全壘打大賽嗨翻全場！" : gameState.matchType === 'retirement' ? "引退賽圓滿落幕，全場球迷淚眼相送傳奇背號！" : "比賽正式結束！";
-            let t2 = "感謝各位球迷的熱情支持！";
+            let totalAway = gameState.awayScores.reduce((a,b)=>a+b, 0);
+            let totalHome = gameState.homeScores.reduce((a,b)=>a+b, 0);
+            let awayTeam = currentMatchup.away;
+            let homeTeam = currentMatchup.home;
+
+            if (totalAway > totalHome) { teams[awayTeam].wins++; teams[homeTeam].losses++; }
+            else { teams[homeTeam].wins++; teams[homeTeam].losses++; }
+
+            let winnerName = totalAway >= totalHome ? teams[awayTeam].name : teams[homeTeam].name;
+            let t1 = `比賽正式結束！由 ${winnerName} 奪得最終勝利！`;
+            let t2 = "精采絕倫的投打交鋒，我們下次再見！";
             
             addCommentary(`🏆 ${t1}`, 'hr'); addCommentary(t2, 'expert');
             speakDistinctVoices(t1, t2);
 
             document.getElementById('action-btn').disabled = true;
             playerData.coins += 8000;
-            updateCoinsUI();
+
+            if (seasonStage === "regular") {
+                regularGameCount++;
+                if (regularGameCount > 5) seasonStage = "playoffs";
+            } else if (seasonStage === "playoffs") {
+                seasonStage = "finals";
+            } else if (seasonStage === "finals") {
+                seasonStage = "finished";
+            }
         }
 
         function updateStandingsTable() {
