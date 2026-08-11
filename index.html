@@ -3,1026 +3,957 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>終極豪華棒球帝國系統 - 明星賽選秀與特化轉播版 v24.0</title>
+    <title>未來科技商店 - 全功能旗艦尊爵版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #010206; color: #f8fafc; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-        .glowing-box { box-shadow: 0 0 60px rgba(16, 185, 129, 0.5); }
-        .scoreboard-table th, .scoreboard-table td { border: 1px solid rgba(51, 65, 85, 0.8); text-align: center; padding: 5px 8px; }
-        .grid-btn { transition: all 0.15s ease; }
-        .grid-btn:hover { background-color: rgba(16, 185, 129, 0.3); border-color: #10b981; transform: scale(1.05); }
-        @keyframes heartbeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); border-color: #ef4444; } }
-        .bases-loaded-alert { animation: heartbeat 0.8s infinite; border-color: #ef4444 !important; }
-        @keyframes furious-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.03); } }
-        .cheer-furious { animation: furious-pulse 0.4s infinite; }
-        @keyframes ad-ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-        .ad-banner-ticker { animation: ad-ticker 15s linear infinite; white-space: nowrap; }
-        .allstar-card { transition: all 0.2s ease; cursor: pointer; }
-        .allstar-card:hover { transform: translateY(-2px); border-color: #f59e0b; }
-        .allstar-card.selected { border-color: #f59e0b; background-color: rgba(245, 158, 11, 0.2); }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入真實 QR Code 產生器套件 (QRCode.js) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
-<body class="min-h-screen flex flex-col justify-between p-4 md:p-6">
+<body class="bg-gray-100 font-sans antialiased">
 
-    <!-- 📺 頂部贊助商廣告跑馬燈 -->
-    <div class="w-full max-w-7xl mx-auto bg-gradient-to-r from-red-600 via-amber-500 to-red-600 text-slate-950 font-black py-2 px-4 rounded-xl mb-4 overflow-hidden shadow-lg flex items-center">
-        <span class="bg-slate-950 text-amber-400 text-xs px-2.5 py-1 rounded-lg uppercase mr-3 font-mono shrink-0">獨家贊助</span>
-        <div class="overflow-hidden relative w-full">
-            <div class="ad-banner-ticker text-xs md:text-sm font-bold tracking-wider text-white">
-                📢 【極速超跑 台灣總代理】狂賀明星賽與引退盛典開匯！ ｜ ⚾ 【威爾斯棒球護具】強打出擊無極限！ ｜ 🍺 【冰山純生啤酒】觀戰最佳良伴！
+    <!-- 系統內嵌式通知容器：置於頂端正中間、最上層 (z-[9999]) -->
+    <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] space-y-2 pointer-events-none flex flex-col items-center"></div>
+
+    <!-- 1. 登入畫面 (管理員金鑰) -->
+    <div id="login-section" class="min-h-screen flex items-center justify-center bg-gray-900">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-96">
+            <div class="text-center mb-6">
+                <div class="bg-indigo-600 text-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">
+                    <i class="fa-solid fa-store"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800">旗艦商店系統</h2>
+                <p class="text-xs text-gray-500 mt-1">請輸入管理員 ID 與金鑰進入後台，或直接進入前台</p>
             </div>
+
+            <form onsubmit="handleKeyLogin(event)" class="mb-4">
+                <div class="mb-3">
+                    <label class="block text-gray-700 text-xs font-semibold mb-1">管理員 ID</label>
+                    <input class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" type="text" id="admin-id">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-xs font-semibold mb-1">安全金鑰</label>
+                    <input class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" type="password" id="secret-key">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition text-sm shadow">管理員登入</button>
+            </form>
+
+            <button onclick="enterShopAsGuest()" class="w-full bg-gray-100 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-200 transition text-sm border">
+                <i class="fa-solid fa-bag-shopping mr-1"></i> 進入商店前台
+            </button>
         </div>
     </div>
 
-    <!-- 🏠 畫面一：球團指揮中心 -->
-    <div id="home-screen" class="w-full max-w-7xl mx-auto flex flex-col flex-grow">
-        <header class="flex items-center justify-between pb-6 border-b border-slate-800 mb-6">
-            <div class="flex items-center gap-3">
-                <div class="bg-emerald-500 p-3 rounded-2xl shadow-lg shadow-emerald-500/30">
-                    <svg class="w-8 h-8 text-slate-950 font-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+
+    <!-- 2. 前台商店介面 -->
+    <div id="shop-section" class="hidden min-h-screen flex flex-col">
+        <div id="announcement-banner" class="bg-indigo-600 text-white text-center py-2 text-xs font-semibold px-4 hidden">
+            <i class="fa-solid fa-bullhorn mr-1"></i> <span id="banner-text"></span>
+        </div>
+
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-store text-indigo-600 text-xl"></i>
+                    <span class="font-bold text-lg text-gray-800">未來科技商店</span>
                 </div>
-                <div>
-                    <h1 class="text-3xl font-black tracking-tight text-white">DELUXE <span class="text-emerald-400">EMPIRE</span></h1>
-                    <div class="text-xs text-slate-400 font-mono">ALL-STAR DRAFT & SPECIAL BROADCAST v24.0</div>
-                </div>
-            </div>
-            <div class="flex items-center gap-4 bg-slate-900 px-5 py-2.5 rounded-2xl border border-slate-800 shadow-lg">
-                <div>
-                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">球團資金 / 聲望</div>
-                    <div class="text-base font-black text-amber-400 font-mono">🪙 <span id="player-coins">25,000</span> DP | ⭐ <span id="team-reputation">100</span> 聲望</div>
-                </div>
-                <div class="text-right border-l border-slate-800 pl-4">
-                    <div class="font-bold text-sm text-emerald-400" id="current-team-name">中信兄弟</div>
-                    <div class="text-xs text-slate-400">總教練 / GM</div>
+                <div class="flex items-center gap-3">
+                    <div id="user-auth-status" class="flex items-center gap-2">
+                        <button onclick="openAuthModal('login')" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-200">登入</button>
+                        <button onclick="openAuthModal('register')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700">註冊</button>
+                    </div>
+                    
+                    <button onclick="openVipModal()" class="bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-600"><i class="fa-solid fa-crown"></i> 會員方案</button>
+                    <button onclick="openProfileModal()" id="profile-btn" class="hidden bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-200"><i class="fa-solid fa-user-gear"></i> 個人中心</button>
+                    <button onclick="openSellerDashboard()" class="bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-purple-700"><i class="fa-solid fa-chart-line"></i> 賣家儀表板</button>
+                    <button onclick="openSellModal()" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-700"><i class="fa-solid fa-plus"></i> 上架商品</button>
+                    <button onclick="toggleCartModal()" class="relative bg-indigo-50 text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-100">
+                        <i class="fa-solid fa-cart-shopping"></i> 購物車 <span id="cart-count" class="bg-red-500 text-white rounded-full px-1.5 py-0.2 text-[10px]">0</span>
+                    </button>
+                    <button onclick="backToLogin()" class="bg-gray-50 text-gray-600 border px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-100"><i class="fa-solid fa-user-shield"></i> 後台</button>
                 </div>
             </div>
         </header>
 
-        <!-- 功能分頁 -->
-        <div class="flex flex-wrap gap-2 mb-6 bg-slate-900/90 p-2 rounded-2xl border border-slate-800">
-            <button onclick="switchTab('standings')" id="tab-standings" class="tab-btn active px-4 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-500 text-slate-950">📊 聯盟戰績與排程</button>
-            <button onclick="switchTab('strategy')" id="tab-strategy" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all">🧠 教練團策略佈陣</button>
-            <button onclick="switchTab('events')" id="tab-events" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all">🌟 明星賽票選與引退賽</button>
-            <button onclick="switchTab('expansion')" id="tab-expansion" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all">🌐 聯盟擴編與改革</button>
-        </div>
-
-        <div class="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between shadow-xl">
-                
-                <!-- 1. 戰績與賽程 -->
-                <div id="pane-standings" class="tab-pane flex flex-col h-full justify-between">
-                    <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-black text-slate-100 flex items-center gap-2"><span>📊 聯盟戰績排行榜</span></h2>
-                            <span id="season-stage-badge" class="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-bold border border-emerald-500/30">例行賽進行中</span>
-                        </div>
-                        <div class="overflow-x-auto mb-4">
-                            <table class="w-full scoreboard-table text-xs font-mono bg-slate-950/80 rounded-xl overflow-hidden">
-                                <thead>
-                                    <tr class="bg-slate-800 text-slate-300 font-bold">
-                                        <th class="text-left pl-3">排名 / 球隊</th><th>勝</th><th>敗</th><th>和</th><th>勝率</th><th>勝差</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="standings-tbody"></tbody>
-                            </table>
-                        </div>
-                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                            <div class="text-xs font-bold text-amber-400 mb-2 flex justify-between items-center">
-                                <span id="schedule-title">📅 本週賽程：第 1 場</span>
-                                <span id="matchup-teams" class="text-slate-200">中信兄弟 vs 統一獅</span>
-                            </div>
-                            <div class="text-xs text-slate-400">全新升級：點擊明星賽可進入專屬球星票選組合視窗，引退賽與常規賽擁有截然不同的轉播風格與語音風格！</div>
-                        </div>
-                    </div>
+        <main class="flex-1 max-w-7xl mx-auto px-6 py-8 w-full space-y-6">
+            <div class="bg-white p-4 rounded-xl shadow-sm border flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex gap-2 w-full md:w-auto">
+                    <button onclick="filterCategory('all')" class="cat-btn bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">全部商品</button>
+                    <button onclick="filterCategory('3C周邊')" class="cat-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200">3C周邊</button>
+                    <button onclick="filterCategory('辦公文具')" class="cat-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200">辦公文具</button>
                 </div>
-
-                <!-- 2. 教練團策略 -->
-                <div id="pane-strategy" class="tab-pane hidden flex flex-col h-full justify-between">
-                    <div>
-                        <h2 class="text-xl font-black text-slate-100 mb-4">🧠 教練團深度策略與防守佈陣</h2>
-                        <div class="space-y-3">
-                            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
-                                <div>
-                                    <div class="font-bold text-sm text-amber-300">🛡️ 內野前趨防守 (Infield In)</div>
-                                    <div class="text-xs text-slate-400 mt-0.5">得點圈有人時防範本壘失分</div>
-                                </div>
-                                <button onclick="setStrategy('infield_in')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs border border-amber-500/40">啟用佈陣</button>
-                            </div>
-                            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
-                                <div>
-                                    <div class="font-bold text-sm text-emerald-300">🔥 強力拉打 Shift 佈陣</div>
-                                    <div class="text-xs text-slate-400 mt-0.5">針對對方強打者布下重兵防守</div>
-                                </div>
-                                <button onclick="setStrategy('shift')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs border border-emerald-500/40">啟用佈陣</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3. 明星賽與引退賽 -->
-                <div id="pane-events" class="tab-pane hidden flex flex-col h-full justify-between">
-                    <div>
-                        <h2 class="text-xl font-black text-slate-100 mb-4">🌟 明星賽球員票選與引退賽轉播</h2>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                                <div class="font-bold text-sm text-amber-400 mb-1">⭐ 舉辦明星對抗賽 (進行球員選秀)</div>
-                                <div class="text-xs text-slate-400 mb-3">挑選您的明星夢幻陣容並展開特化轉播！</div>
-                                <button onclick="openAllStarDraftModal()" class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs">挑選球員並開打明星賽</button>
-                            </div>
-                            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                                <div class="font-bold text-sm text-pink-400 mb-1">🏛️ 舉辦傳奇球星引退賽轉播</div>
-                                <div class="text-xs text-slate-400 mb-3">進入感性、溫馨的引退賽轉播盛典！</div>
-                                <button onclick="startSpecialMatch('retirement')" class="w-full py-2 bg-pink-600 hover:bg-pink-500 text-white font-black rounded-xl text-xs">開打引退賽轉播</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 4. 聯盟擴編與改革 -->
-                <div id="pane-expansion" class="tab-pane hidden flex flex-col h-full justify-between">
-                    <div>
-                        <h2 class="text-xl font-black text-slate-100 mb-4">🌐 聯盟擴編與規則改革會議</h2>
-                        <div class="space-y-3">
-                            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
-                                <div>
-                                    <div class="font-bold text-sm text-white">⚾ 開放聯盟擴編：新增第 7、第 8 隊</div>
-                                    <div class="text-xs text-slate-400 mt-0.5">讓聯盟規模擴大為 8 支球隊競爭！</div>
-                                </div>
-                                <button onclick="expandLeague()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs">執行擴編會議</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-4 pt-3 border-t border-slate-800 text-xs text-slate-400 text-center">
-                    提示：隨時可切換上方分頁進行明星賽球員選秀或引退賽轉播！
+                <div class="w-full md:w-72">
+                    <input type="text" id="search-input" oninput="renderShopProducts()" placeholder="搜尋商品名稱..." class="w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
             </div>
+            <div id="shop-product-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+        </main>
+    </div>
 
-            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between shadow-xl">
-                <div>
-                    <h3 class="text-lg font-black text-slate-100 mb-4">🚀 賽事實戰指揮</h3>
-                    <div class="space-y-3">
-                        <button onclick="startPreGameShow(false)" class="w-full text-left p-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-slate-950 font-black flex items-center justify-between shadow-lg transition-all transform active:scale-95">
-                            <div class="flex items-center gap-3">
-                                <span class="text-2xl">🏟️</span>
-                                <div>
-                                    <div class="text-white text-base">進入數位球場 (常規賽手動對決)</div>
-                                    <div class="text-xs text-emerald-100 font-normal">帶 2 次電視挑戰的專業對決</div>
-                                </div>
-                            </div>
-                            <span class="text-xl text-white">➔</span>
-                        </button>
 
-                        <button onclick="startPreGameShow(true)" class="w-full text-left p-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-500 hover:to-indigo-600 text-slate-950 font-black flex items-center justify-between shadow-lg transition-all transform active:scale-95">
-                            <div class="flex items-center gap-3">
-                                <span class="text-2xl">📺</span>
-                                <div>
-                                    <div class="text-white text-base">啟動觀戰模式 (賽前 + AI轉播)</div>
-                                    <div class="text-xs text-indigo-100 font-normal">全自動轉播與AI戰術</div>
-                                </div>
-                            </div>
-                            <span class="text-xl text-white">➔</span>
-                        </button>
-
-                        <button onclick="simulateOtherMatches()" class="w-full text-left p-4 rounded-2xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 flex items-center justify-between transition-all">
-                            <div class="flex items-center gap-3">
-                                <span class="text-2xl">⚡</span>
-                                <div>
-                                    <div class="font-bold text-sm text-amber-300">關站 / 模擬其他對手比賽</div>
-                                    <div class="text-xs text-slate-500">AI 自動更新全聯盟戰績</div>
-                                </div>
-                            </div>
-                            <span class="text-xs bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg font-bold">執行</span>
-                        </button>
-
-                        <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
-                            <div class="text-xs font-bold text-slate-400 mb-2">🛡️ 選擇執教球隊</div>
-                            <select id="team-selector" onchange="changeUserTeam()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-emerald-400 font-bold focus:outline-none">
-                                <option value="0">中信兄弟</option>
-                                <option value="1">統一獅</option>
-                                <option value="2">樂天桃猿</option>
-                                <option value="3">味全龍</option>
-                                <option value="4">富邦悍將</option>
-                                <option value="5">台鋼雄鷹</option>
-                            </select>
-                        </div>
+    <!-- 會員 5 種方案 Modal -->
+    <div id="vip-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-[700px] max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-crown text-amber-500"></i> 選擇您的會員方案</h3>
+                <button onclick="closeVipModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto space-y-3 pr-1 mb-4">
+                <div class="border rounded-xl p-4 flex justify-between items-center bg-gray-50 hover:border-amber-500 transition">
+                    <div>
+                        <h4 class="font-bold text-gray-800">1. 青銅入門會員 (Free)</h4>
+                        <p class="text-xs text-gray-500">基礎購物功能，享一般價格與標準積點。</p>
                     </div>
+                    <button onclick="selectVipPlan('青銅入門方案', 0)" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-xs font-semibold hover:bg-gray-300">選擇此方案</button>
                 </div>
+                <div class="border rounded-xl p-4 flex justify-between items-center bg-gray-50 hover:border-amber-500 transition">
+                    <div>
+                        <h4 class="font-bold text-gray-800">2. 白銀超值會員 (NT$ 200 / 月)</h4>
+                        <p class="text-xs text-gray-500">全館 95 折，每月享有一次免運券。</p>
+                    </div>
+                    <button onclick="selectVipPlan('白銀超值方案', 200)" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-amber-600">立即訂閱</button>
+                </div>
+                <div class="border rounded-xl p-4 flex justify-between items-center bg-amber-50 border-amber-300 shadow-sm">
+                    <div>
+                        <h4 class="font-bold text-amber-900">3. 黃金尊爵會員 (NT$ 500 / 年) ⭐ 最熱門</h4>
+                        <p class="text-xs text-amber-800">全館永久 85 折，雙倍紅利，賣家商品優先置頂。</p>
+                    </div>
+                    <button onclick="selectVipPlan('黃金尊爵方案', 500)" class="bg-amber-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-amber-700">立即訂閱</button>
+                </div>
+                <div class="border rounded-xl p-4 flex justify-between items-center bg-gray-50 hover:border-amber-500 transition">
+                    <div>
+                        <h4 class="font-bold text-gray-800">4. 白金商務會員 (NT$ 1,200 / 年)</h4>
+                        <p class="text-xs text-gray-500">全館 8 折，專屬客服通道，賣家上架免手續費。</p>
+                    </div>
+                    <button onclick="selectVipPlan('白金商務方案', 1200)" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-indigo-700">立即訂閱</button>
+                </div>
+                <div class="border rounded-xl p-4 flex justify-between items-center bg-gray-50 hover:border-amber-500 transition">
+                    <div>
+                        <h4 class="font-bold text-gray-800">5. 鑽石至尊會員 (NT$ 3,000 / 永久)</h4>
+                        <p class="text-xs text-gray-500">終身 75 折，所有權限解鎖，享有平台分潤抽成資格。</p>
+                    </div>
+                    <button onclick="selectVipPlan('鑽石至尊方案', 3000)" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-purple-700">立即訂閱</button>
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <button onclick="closeVipModal()" class="px-4 py-2 bg-gray-200 rounded-lg text-sm text-gray-700">關閉</button>
             </div>
         </div>
     </div>
 
-    <!-- ⭐ 明星賽球員選秀彈窗 -->
-    <div id="allstar-draft-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden flex-col items-center justify-center p-4 z-50 overflow-y-auto">
-        <div class="bg-slate-900 border-2 border-amber-500 rounded-3xl max-w-4xl w-full p-6 shadow-2xl my-auto">
-            <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
-                <div>
-                    <h3 class="text-2xl font-black text-amber-400 flex items-center gap-2"><span>⭐ 明星賽夢幻陣容球員選秀</span></h3>
-                    <div class="text-xs text-slate-400 mt-1">請從下列聯盟頂級球星中點選選出剛好 <span class="text-amber-400 font-bold">3 位先發球員</span> 組成明星隊！</div>
+
+    <!-- 結帳付款與基本資料填寫 Modal -->
+    <div id="checkout-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-[500px] max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-file-invoice text-indigo-600"></i> 填寫基本資料與付款</h3>
+                <button onclick="closeCheckoutModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto space-y-4 pr-1">
+                <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100 text-xs">
+                    <p class="font-bold text-indigo-900">您選擇的結帳項目：<span id="checkout-item-name" class="text-indigo-600">商品結帳</span></p>
+                    <p class="font-bold text-indigo-900 mt-1">應付總金額：<span id="checkout-item-price" class="text-indigo-600">NT$ 0</span></p>
                 </div>
-                <div class="text-right">
-                    <div class="text-xs text-slate-400">已選球星數</div>
-                    <div class="text-lg font-black text-amber-400 font-mono"><span id="selected-allstar-count">0</span> / 3</div>
+
+                <div class="space-y-3">
+                    <h4 class="font-bold text-sm text-gray-700">1. 填寫基本收件/聯絡資料</h4>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">真實姓名 / 稱呼</label>
+                        <input type="text" id="buyer-realname" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="請輸入您的姓名" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">聯絡電話</label>
+                        <input type="text" id="buyer-phone" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="0912-345678" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">收件地址</label>
+                        <input type="text" id="buyer-address" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="請輸入收件地址" required>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="font-bold text-sm text-gray-700">2. 選擇付款方式</h4>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-2.5 border rounded-xl cursor-pointer hover:bg-gray-50 text-sm">
+                            <input type="radio" name="pay-method" value="credit" checked class="text-indigo-600">
+                            <span>信用卡線上支付 (產生付款 QR Code)</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 border rounded-xl cursor-pointer hover:bg-gray-50 text-sm">
+                            <input type="radio" name="pay-method" value="linepay" class="text-indigo-600">
+                            <span>Line Pay 行動支付 (產生 QR Code)</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 border rounded-xl cursor-pointer hover:bg-gray-50 text-sm">
+                            <input type="radio" name="pay-method" value="jkopay" class="text-indigo-600">
+                            <span>街口支付 (產生 QR Code)</span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
-            <div id="allstar-pool-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-[50vh] overflow-y-auto p-2 mb-6 bg-slate-950 rounded-2xl border border-slate-800"></div>
-
-            <div class="flex gap-4">
-                <button onclick="confirmAllStarDraft()" id="confirm-allstar-btn" disabled class="flex-grow py-3 bg-slate-800 text-slate-500 font-bold rounded-xl text-sm transition-all cursor-not-allowed">請先選滿 3 位明星球員</button>
-                <button onclick="closeAllStarDraftModal()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-sm transition-all">取消</button>
+            <div class="border-t pt-4 mt-4 flex justify-end gap-2">
+                <button onclick="closeCheckoutModal()" class="px-4 py-2 bg-gray-200 rounded-lg text-sm text-gray-700">取消</button>
+                <button onclick="generateQRCodeModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 shadow">確認填寫，產生真實 QR Code</button>
             </div>
         </div>
     </div>
 
-    <!-- 📺 賽前轉播與先發介紹彈窗 -->
-    <div id="pregame-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md hidden flex-col items-center justify-center p-4 z-50">
-        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-emerald-500 rounded-3xl max-w-3xl w-full p-8 shadow-2xl">
-            <div class="text-emerald-400 font-mono text-xs uppercase tracking-widest mb-2 font-bold text-center" id="pregame-header-tag">🎙️ 賽前轉播 Show ＆ 先發陣容介紹</div>
-            <h2 id="pregame-title" class="text-3xl font-black text-white mb-6 text-center">中華職棒年度頂級對決</h2>
+
+    <!-- 真實 QR Code 付款完成 Modal -->
+    <div id="qrcode-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-96 text-center space-y-4">
+            <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-qrcode text-indigo-600"></i> 請使用手機掃描 QR Code</h3>
+            <p class="text-xs text-gray-500">使用相機或 Line / 支付 App 掃描下方即為真實支付連結</p>
             
-            <div class="grid grid-cols-2 gap-6 mb-6">
-                <div class="bg-slate-900 border border-blue-900/60 rounded-2xl p-4 text-center">
-                    <div class="text-blue-400 font-bold text-sm mb-2" id="pregame-away-name">客場球隊</div>
-                    <div class="text-xs text-slate-400 mb-3">先發投手：<span class="text-white font-bold" id="pregame-away-pitcher">王牌投手</span></div>
-                    <div class="text-[11px] text-slate-300 bg-slate-950 p-3 rounded-xl text-left space-y-1 font-mono" id="pregame-away-lineup"></div>
-                </div>
-                <div class="bg-slate-900 border border-red-900/60 rounded-2xl p-4 text-center">
-                    <div class="text-red-400 font-bold text-sm mb-2" id="pregame-home-name">主場球隊</div>
-                    <div class="text-xs text-slate-400 mb-3">先發投手：<span class="text-white font-bold" id="pregame-home-pitcher">王牌投手</span></div>
-                    <div class="text-[11px] text-slate-300 bg-slate-950 p-3 rounded-xl text-left space-y-1 font-mono" id="pregame-home-lineup"></div>
-                </div>
+            <!-- 真實 QR Code 生成容器 -->
+            <div id="qrcode-box" class="bg-white p-4 rounded-xl inline-block border shadow-inner flex justify-center items-center"></div>
+
+            <div class="bg-indigo-50 p-3 rounded-lg text-xs text-indigo-900 text-left space-y-1">
+                <p><strong>方案/商品：</strong> <span id="qr-item-name"></span></p>
+                <p><strong>金額：</strong> <span id="qr-item-price"></span></p>
+                <p><strong>買家：</strong> <span id="qr-buyer-name"></span></p>
             </div>
 
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-6 text-xs text-slate-300 text-center font-mono">
-                📢 <span id="pregame-expert-analysis">「兩隊近期戰況膠著，今天的先發投手對決將是勝負的最大分水嶺！」</span>
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeQRCodeModal()" class="w-1/2 py-2 bg-gray-200 rounded-lg text-sm text-gray-700 font-semibold">取消</button>
+                <button onclick="finishOrderProcess()" class="w-1/2 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow">我已完成付款</button>
             </div>
-
-            <button onclick="enterStadiumFromPreGame()" class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-2xl text-base transition-all shadow-lg cursor-pointer">
-                看完介紹，正式進入球場開打！ ▶
-            </button>
         </div>
     </div>
 
-    <!-- 📺 電視挑戰彈窗 -->
-    <div id="review-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden flex-col items-center justify-center p-4 z-50">
-        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-purple-500 rounded-3xl max-w-md w-full p-6 shadow-2xl text-center">
-            <div class="text-purple-400 font-mono text-xs uppercase tracking-widest mb-1 font-bold">📺 電視輔助判決挑戰</div>
-            <h3 class="text-xl font-black text-white mb-2">請問總教練要「挑戰哪裡」？</h3>
-            <p class="text-xs text-slate-400 mb-4">（本場剩餘挑戰機會：<span id="remaining-challenges" class="text-amber-400 font-bold">2</span> 次）</p>
-            <div class="space-y-3 mb-6">
-                <button onclick="executeReview('home')" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs border border-purple-500/40">🚩 挑戰本壘板衝撞 / 阻擋本壘</button>
-                <button onclick="executeReview('first')" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs border border-purple-500/40">🚩 挑戰一壘包安全上壘 / 刺殺</button>
-                <button onclick="executeReview('outfield')" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs border border-purple-500/40">🚩 挑戰外野全壘打牆界內外爭議</button>
+
+    <!-- 登入/註冊 Modal -->
+    <div id="auth-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-96">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 id="auth-modal-title" class="text-lg font-bold text-gray-800">會員登入</h3>
+                <button onclick="closeAuthModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <button onclick="closeReviewModal()" class="text-xs text-slate-500 hover:text-slate-300 font-bold">取消挑戰</button>
+            <form onsubmit="handleAuthSubmit(event)">
+                <div class="mb-3">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">帳號</label>
+                    <input type="text" id="auth-username" class="w-full px-3 py-2 border rounded-lg text-sm" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">密碼</label>
+                    <input type="password" id="auth-password" class="w-full px-3 py-2 border rounded-lg text-sm" required>
+                </div>
+                <button type="submit" id="auth-submit-btn" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 text-sm shadow mb-3">登入</button>
+            </form>
+            <div class="text-center text-xs text-gray-500">
+                <span id="auth-switch-text">還沒有帳號？</span>
+                <button onclick="switchAuthMode()" id="auth-switch-btn" class="text-indigo-600 font-bold hover:underline ml-1">點此註冊</button>
+            </div>
         </div>
     </div>
 
-    <!-- 📺 局間商業廣告插播彈窗 -->
-    <div id="ad-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden flex-col items-center justify-center p-4 z-50">
-        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500 rounded-3xl max-w-lg w-full p-8 shadow-2xl text-center">
-            <div class="text-amber-400 font-mono text-xs uppercase tracking-widest mb-2 font-bold">📺 精彩局間廣告插播</div>
-            <h2 id="ad-title" class="text-2xl font-black text-white mb-4">【極速超跑 台灣總代理】</h2>
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6 text-slate-300 text-sm leading-relaxed">
-                <p id="ad-content">「人生就該有一輛屬於自己的極速超跑！」</p>
-                <div class="mt-4 text-xs text-amber-400 font-bold">💰 廣告權利金已入帳：+1,500 DP</div>
-            </div>
-            <div class="text-xs text-slate-400 mb-4 font-mono">廣告結束倒數：<span id="ad-countdown" class="text-amber-400 font-bold text-base">3</span> 秒</div>
-            <button id="skip-ad-btn" disabled class="w-full py-3 bg-slate-800 text-slate-500 font-bold rounded-xl text-sm transition-all cursor-not-allowed">廣告播放中...</button>
-        </div>
-    </div>
 
-    <!-- 🏟️ 畫面二：數位球場與轉播 -->
-    <div id="stadium-screen" class="w-full max-w-6xl mx-auto hidden flex-col flex-grow">
-        <div class="flex justify-between items-center mb-4 bg-slate-900 px-6 py-3 rounded-2xl border border-slate-800">
-            <button onclick="goToHome()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold rounded-xl text-sm flex items-center gap-2 transition-all">
-                <span>⬅️</span> 返回球團指揮中心
-            </button>
-            <div class="flex items-center gap-4">
-                <span id="cheer-banner" class="px-3 py-1 bg-pink-500/20 text-pink-300 rounded-full text-xs font-bold border border-pink-500/30 cheer-furious">🔥 狂熱應援曲強勢放送中！</span>
-                <span id="turn-badge" class="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-xs font-bold border border-amber-500/30">🎯 目前半局：打擊進攻</span>
-                <div id="game-info" class="text-base font-black text-amber-400">第 1 局 上</div>
+    <!-- 個人中心 Modal -->
+    <div id="profile-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-[650px] max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-user-gear text-indigo-600"></i> 會員個人中心與歷史訂單</h3>
+                <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-        </div>
-
-        <div id="scoreboard-box" class="bg-slate-900 border-2 border-emerald-500/80 rounded-2xl p-5 mb-4 glowing-box shadow-2xl transition-all">
-            <div class="overflow-x-auto mb-4">
-                <table class="w-full scoreboard-table text-xs font-mono bg-slate-950/80 rounded-xl overflow-hidden">
-                    <thead>
-                        <tr class="bg-slate-800 text-slate-300 font-bold">
-                            <th class="text-left pl-3 w-28">球隊 / 局數</th>
-                            <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th>
-                            <th class="bg-emerald-950/50 text-emerald-400 font-black">R</th>
-                            <th class="bg-slate-800">H</th>
-                            <th class="bg-slate-800">E</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inning-table-body">
-                        <tr id="row-away" class="border-b border-slate-800">
-                            <td class="text-left pl-3 font-bold text-blue-400" id="name-away">客場</td>
-                            <td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>
-                            <td id="r-away" class="font-black text-emerald-400 bg-emerald-950/30 text-sm">0</td>
-                            <td id="h-away" class="font-bold">0</td>
-                            <td id="e-away" class="text-slate-400">0</td>
-                        </tr>
-                        <tr id="row-home">
-                            <td class="text-left pl-3 font-bold text-red-400" id="name-home">主場</td>
-                            <td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>
-                            <td id="r-home" class="font-black text-emerald-400 bg-emerald-950/30 text-sm">0</td>
-                            <td id="h-home" class="font-bold">0</td>
-                            <td id="e-home" class="text-slate-400">0</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex justify-around items-center">
-                    <div class="text-center">
-                        <div class="text-[10px] text-slate-400 font-bold mb-0.5">S (好球)</div>
-                        <div id="count-s" class="text-2xl font-black text-amber-400">0</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-[10px] text-slate-400 font-bold mb-0.5">B (壞球)</div>
-                        <div id="count-b" class="text-2xl font-black text-emerald-400">0</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-[10px] text-slate-400 font-bold mb-0.5">O (出局)</div>
-                        <div id="count-o" class="text-2xl font-black text-rose-500">0</div>
-                    </div>
+            <div class="flex-1 overflow-y-auto space-y-6">
+                <div class="bg-gray-50 p-4 rounded-xl border">
+                    <h4 class="font-bold text-sm text-gray-700 mb-3">會員狀態與收件資料</h4>
+                    <p class="text-xs text-indigo-600 font-bold mb-3" id="profile-vip-status">一般會員</p>
+                    <form onsubmit="updateProfileData(event)" class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">聯絡電話</label>
+                            <input type="text" id="profile-phone" class="w-full px-3 py-1.5 border rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">收件地址</label>
+                            <input type="text" id="profile-address" class="w-full px-3 py-1.5 border rounded text-sm">
+                        </div>
+                        <div class="col-span-2 flex justify-end">
+                            <button type="submit" class="bg-indigo-600 text-white px-4 py-1.5 rounded text-xs font-semibold hover:bg-indigo-700">儲存變更</button>
+                        </div>
+                    </form>
                 </div>
-
-                <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex items-center justify-around">
-                    <div class="text-xs text-slate-400 font-bold">壘包佔位狀況</div>
-                    <div class="relative w-14 h-14 rotate-45 border-2 border-slate-700 bg-slate-900 flex items-center justify-center rounded-lg shadow-inner">
-                        <div id="base-2" class="absolute top-1 w-3 h-3 bg-slate-800 rounded-sm border border-slate-600"></div>
-                        <div id="base-3" class="absolute left-1 w-3 h-3 bg-slate-800 rounded-sm border border-slate-600"></div>
-                        <div id="base-1" class="absolute right-1 w-3 h-3 bg-slate-800 rounded-sm border border-slate-600"></div>
-                        <div class="absolute w-1.5 h-1.5 bg-slate-600 rounded-full"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div id="control-panel" class="md:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
                 <div>
-                    <h2 id="control-title" class="text-base font-bold text-slate-200 mb-2 border-b border-slate-800 pb-2 flex justify-between items-center">
-                        <span>🎯 自主打擊揮擊區 (點選九宮格)</span>
-                    </h2>
-                    <p id="control-desc" class="text-[11px] text-slate-400 mb-3">請點選九宮格準備對決：</p>
-                    
-                    <div class="grid grid-cols-2 gap-2 mb-3">
-                        <button onclick="useRuleTactics('squeeze')" class="py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-lg text-xs font-bold border border-slate-700">⚾ 強迫取分</button>
-                        <button onclick="useRuleTactics('ibb')" class="py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-lg text-xs font-bold border border-slate-700">🛑 故意四壞(IBB)</button>
-                        <button onclick="useRuleTactics('steal')" class="py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-lg text-xs font-bold border border-slate-700">⚡ 發動盜壘</button>
-                        <button onclick="openReviewModal()" id="review-btn" class="py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-purple-400 rounded-lg text-xs font-bold border border-slate-700">📺 電視挑戰(<span id="review-count">2</span>)</button>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800 mb-3">
-                        <button onclick="selectZone(1)" id="z-1" class="grid-btn bg-slate-900 border border-slate-700 h-10 rounded-lg text-xs font-bold text-slate-300">1</button>
-                        <button onclick="selectZone(2)" id="z-2" class="grid-btn bg-slate-900 border border-slate-700 h-10 rounded-lg text-xs font-bold text-slate-300">2</button>
-                        <button onclick="selectZone(3)" id="z-3" class="grid-btn bg-slate-900 border border-slate-700 h-10 rounded-lg text-xs font-bold text-slate-300">3</button>
-                        <button onclick="selectZone(4)" id="z-4" class="grid-btn bg-slate-900 border border-slate-700 h-10 rounded-lg text-xs font-bold text-slate-300">4</button>
-                        <button onclick="selectZone(5)" id="z-5" class="grid-btn bg-emerald-950/70 border-2 border-emerald-500 h-10 rounded-lg text-xs font-bold text-emerald-400">5</button>
-                        <button onclick="selectZone(6)" id="z-6" class="grid-btn bg-slate-900 border border-slate-700 h-10 rounded-lg text-xs font-bold text-slate-300">6</button>
-                        <button onclick="selectZone(7)" id="z-7" class="grid-btn bg-slate-900 border border-slate-700 h-10 rounded-lg text-xs font-bold text-slate-300">7</button>
-                        <button onclick="selectZone(8)" id="z-8" class="grid-btn bg-slate-900 border border-slate-700 h-10 rounded-lg text-xs font-bold text-slate-300">8</button>
-                        <button onclick="selectZone(9)" id="z-9" class="grid-btn bg-slate-900 border border-slate-700 h-10 rounded-lg text-xs font-bold text-slate-300">9</button>
-                    </div>
-                </div>
-
-                <button id="action-btn" onclick="executeAtBat()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black py-3 px-4 rounded-xl shadow-lg transition-all text-base tracking-wider">
-                    揮棒打擊！ (落點: <span id="selected-zone-text">5</span>)
-                </button>
-            </div>
-
-            <div class="md:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
-                <div>
-                    <h2 class="text-base font-bold text-slate-200 mb-3 border-b border-slate-800 pb-2 flex justify-between items-center">
-                        <span id="stadium-room-title">🎙️ 現場實況轉播室</span>
-                        <span id="mvp-tag" class="text-xs text-amber-400 font-mono">🌟 即時 MVP 預測：載入中...</span>
-                    </h2>
-                    <div id="commentary-box" class="bg-slate-950/90 border border-slate-800 rounded-xl p-3 h-48 overflow-y-auto space-y-2 text-xs font-mono scroll-smooth">
-                        <div class="text-emerald-400 font-bold">[賽事開打] 明星賽選秀與引退賽特化系統已就緒！</div>
+                    <h4 class="font-bold text-sm text-gray-700 mb-2">我的購買歷史訂單</h4>
+                    <div class="border rounded-xl overflow-hidden">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-gray-100 text-gray-600 border-b">
+                                <tr><th class="p-3">單號</th><th class="p-3">明細</th><th class="p-3">金額</th><th class="p-3">狀態</th></tr>
+                            </thead>
+                            <tbody id="my-orders-table" class="divide-y text-gray-700">
+                                <tr><td colspan="4" class="p-4 text-center text-gray-400">尚無歷史訂單</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 邏輯腳本 -->
+
+    <!-- 購物車 Modal -->
+    <div id="cart-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-[480px] max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-cart-shopping text-indigo-600"></i> 我的購物車</h3>
+                <button onclick="toggleCartModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="cart-items-container" class="flex-1 overflow-y-auto space-y-3 mb-4 pr-1"></div>
+            <div class="border-t pt-4 space-y-3">
+                <div class="flex gap-2">
+                    <input type="text" id="coupon-input" placeholder="輸入折扣碼" class="flex-1 px-3 py-1.5 border rounded text-sm">
+                    <button onclick="applyCoupon()" class="bg-gray-800 text-white px-3 py-1.5 rounded text-xs font-semibold">使用折扣</button>
+                </div>
+                <div class="flex justify-between items-center font-bold text-lg">
+                    <span>總金額：</span>
+                    <span id="cart-total-price" class="text-indigo-600">NT$ 0</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="toggleCartModal()" class="w-1/2 py-2 bg-gray-200 rounded-lg text-sm text-gray-700 font-semibold">繼續購物</button>
+                    <button onclick="openCheckoutModalForCart()" class="w-1/2 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 shadow">前往付款</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 上架商品 Modal -->
+    <div id="sell-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-96">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">上架新商品</h3>
+            <form onsubmit="handleUserSell(event)">
+                <div class="mb-3">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">商品分類</label>
+                    <select id="new-item-cat" class="w-full px-3 py-2 border rounded-lg text-sm">
+                        <option value="3C周邊">3C周邊</option>
+                        <option value="辦公文具">辦公文具</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">商品名稱</label>
+                    <input type="text" id="new-item-name" class="w-full px-3 py-2 border rounded-lg text-sm" required>
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">價格 (NT$)</label>
+                    <input type="number" id="new-item-price" class="w-full px-3 py-2 border rounded-lg text-sm" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">庫存數量</label>
+                    <input type="number" id="new-item-stock" class="w-full px-3 py-2 border rounded-lg text-sm" value="10" required>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeSellModal()" class="px-4 py-2 bg-gray-200 rounded-lg text-sm text-gray-700">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700">確認上架</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- 賣家儀表板 Modal -->
+    <div id="seller-dashboard-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-[750px] max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-purple-600 text-xl"></i>
+                    <h3 class="text-lg font-bold text-gray-800">賣家儀表板與訂單出貨管理</h3>
+                </div>
+                <button onclick="closeSellerDashboard()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-purple-50 p-4 rounded-xl border">
+                        <p class="text-xs font-semibold text-purple-600">您上架的商品數</p>
+                        <h4 id="seller-stat-products" class="text-2xl font-bold text-purple-900 mt-1">0</h4>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-xl border">
+                        <p class="text-xs font-semibold text-green-600">收到訂單總筆數</p>
+                        <h4 id="seller-stat-sales" class="text-2xl font-bold text-green-900 mt-1">0</h4>
+                    </div>
+                </div>
+                <div class="bg-white border rounded-xl overflow-hidden">
+                    <div class="bg-gray-50 px-4 py-2 border-b text-xs font-bold text-gray-600">買家訂單與出貨管理</div>
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b text-gray-500 bg-gray-50/50">
+                                <th class="p-3">時間/單號</th>
+                                <th class="p-3">商品</th>
+                                <th class="p-3">買家</th>
+                                <th class="p-3">狀態</th>
+                                <th class="p-3">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="seller-orders-table" class="divide-y text-gray-700">
+                            <tr><td colspan="5" class="p-4 text-center text-gray-400">尚無銷售紀錄</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 3. 後台管理員系統介面 -->
+    <div id="admin-section" class="hidden min-h-screen flex">
+        <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-xl">
+            <div class="p-5 text-xl font-bold text-white tracking-wider border-b border-slate-800 flex items-center gap-3">
+                <i class="fa-solid fa-store text-indigo-500"></i>
+                <span>商店管理後台</span>
+            </div>
+            <nav class="flex-1 px-4 py-6 space-y-2">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-indigo-600 text-white transition"><i class="fa-solid fa-chart-pie w-5"></i> 營運儀表板</button>
+                <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 transition"><i class="fa-solid fa-users w-5"></i> 會員黑名單管理</button>
+                <button onclick="switchTab('announcement')" id="nav-announcement" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 transition"><i class="fa-solid fa-bullhorn w-5"></i> 網站公告設定</button>
+                <button onclick="switchTab('crud')" id="nav-crud" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 transition"><i class="fa-solid fa-box-archive w-5"></i> 商品管理</button>
+                <button onclick="switchTab('logs')" id="nav-logs" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 transition"><i class="fa-solid fa-clock-rotate-left w-5"></i> 系統日誌</button>
+            </nav>
+            <div class="p-4 border-t border-slate-800 space-y-2">
+                <button onclick="gotoShop()" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 rounded-lg text-sm"><i class="fa-solid fa-store"></i> 前台商店</button>
+                <button onclick="backToLogin()" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600/20 text-red-400 hover:bg-red-600 rounded-lg text-sm"><i class="fa-solid fa-right-from-bracket"></i> 登出</button>
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col">
+            <header class="bg-white h-16 shadow-sm flex items-center justify-between px-8 border-b">
+                <h1 id="page-title" class="text-xl font-bold text-gray-800">營運儀表板</h1>
+                <div class="flex items-center gap-4">
+                    <button onclick="forceLogoutAll()" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-200">強制全站登出</button>
+                    <p id="current-admin-id" class="text-sm font-bold text-gray-700">管理員: admin01</p>
+                </div>
+            </header>
+            <main class="flex-1 p-8 overflow-y-auto space-y-6">
+                <!-- 儀表板頁面 -->
+                <div id="tab-dashboard" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border"><p class="text-sm text-gray-500">總商品數</p><h3 id="stat-total-products" class="text-2xl font-bold mt-2">0</h3></div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border"><p class="text-sm text-gray-500">總訂單數</p><h3 id="stat-total-orders" class="text-2xl font-bold mt-2">0</h3></div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border"><p class="text-sm text-gray-500">註冊會員</p><h3 id="stat-total-users" class="text-2xl font-bold mt-2">0</h3></div>
+                    </div>
+                    <!-- 圖表區域 -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">近 7 天每日營業額趨勢圖</h3>
+                        <div class="h-80">
+                            <canvas id="adminChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 會員與黑名單管理 -->
+                <div id="tab-users" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                        <table class="w-full text-left border-collapse">
+                            <thead><tr class="bg-gray-50 border-b text-gray-600 text-sm"><th class="p-4">會員帳號</th><th class="p-4">身份</th><th class="p-4">狀態</th><th class="p-4">操作</th></tr></thead>
+                            <tbody id="admin-user-table" class="text-sm divide-y"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 網站公告設定 -->
+                <div id="tab-announcement" class="hidden space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border w-96 space-y-3">
+                        <h3 class="font-bold text-gray-800">發布前台公告橫幅</h3>
+                        <textarea id="admin-banner-input" rows="3" class="w-full p-2 border rounded text-sm" placeholder="輸入公告內容..."></textarea>
+                        <button onclick="saveAnnouncement()" class="w-full bg-indigo-600 text-white py-2 rounded text-sm font-semibold hover:bg-indigo-700">更新公告</button>
+                    </div>
+                </div>
+
+                <div id="tab-crud" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                        <table class="w-full text-left border-collapse">
+                            <thead><tr class="bg-gray-50 border-b text-gray-600 text-sm"><th class="p-4">ID</th><th class="p-4">名稱</th><th class="p-4">賣家</th><th class="p-4">價格</th><th class="p-4">庫存</th><th class="p-4">操作</th></tr></thead>
+                            <tbody id="admin-product-table" class="text-sm divide-y"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="tab-logs" class="hidden space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border">
+                        <div class="bg-slate-900 text-slate-200 p-4 rounded-lg font-mono text-xs space-y-2 h-96 overflow-y-auto" id="log-container">
+                            <div>[2026-08-11 15:50:00] SYSTEM_START: 全功能旗艦尊爵版系統已啟動。</div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 完整前端互動腳本 -->
     <script>
-        let teams = [
-            { name: "中信兄弟", wins: 0, losses: 0, ties: 0 },
-            { name: "統一獅", wins: 0, losses: 0, ties: 0 },
-            { name: "樂天桃猿", wins: 0, losses: 0, ties: 0 },
-            { name: "味全龍", wins: 0, losses: 0, ties: 0 },
-            { name: "富邦悍將", wins: 0, losses: 0, ties: 0 },
-            { name: "台鋼雄鷹", wins: 0, losses: 0, ties: 0 }
+        let users = [{ username: "user01", password: "password123", phone: "0912-345678", address: "台北市信義路一段 1 號", isVip: false, isBanned: false }];
+        let currentUser = null;
+        let authMode = 'login';
+        let currentCategory = 'all';
+        let discountRate = 1.0;
+        let adminChartInstance = null;
+
+        let pendingCheckoutItem = null; 
+
+        let products = [
+            { id: 'P001', name: '高效能無線滑鼠', category: '3C周邊', seller: '官方商店', price: 1290, stock: 45, icon: 'fa-computer-mouse', rating: 4.8 },
+            { id: 'P002', name: '機械式鍵盤軸體組合', category: '3C周邊', seller: '官方商店', price: 2490, stock: 12, icon: 'fa-keyboard', rating: 4.9 },
+            { id: 'P003', name: '極簡人體工學辦公椅', category: '辦公文具', seller: '官方商店', price: 3600, stock: 5, icon: 'fa-chair', rating: 4.5 }
         ];
 
-        let userTeamIdx = 0;
-        let seasonStage = "regular";
-        let currentMatchup = { away: 1, home: 0 };
-        let regularGameCount = 1;
-        let playerData = { coins: 25000, reputation: 100 };
+        let cart = [];
+        let salesRecords = [];
+        const validAdmins = { "admin01": "secret-key-888", "root": "master-key-999" };
 
-        let gameState = {
-            inning: 1, isTop: true, balls: 0, strikes: 0, outs: 0,
-            bases: [false, false, false],
-            awayScores: [0,0,0,0,0,0,0,0,0], homeScores: [0,0,0,0,0,0,0,0,0],
-            awayHits: 0, homeHits: 0, awayErrors: 0, homeErrors: 0,
-            gameOver: false, selectedZone: 5, reviewChances: 2, currentDefenseStrategy: 'normal',
-            matchType: 'regular', chosenAllStars: []
+        window.onload = function() { 
+            renderShopProducts(); 
+            renderAdminProducts(); 
+            renderAdminUsers(); 
+            initAdminChart();
         };
 
-        let isSpectating = false;
-        let spectateTimer = null;
-        let cheerInterval = null;
-        let allStarPool = [];
-        let selectedAllStarIndices = [];
-
-        window.onload = function() {
-            updateStandingsTable();
-            updateScheduleInfo();
-        };
-
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                b.classList.remove('active', 'bg-emerald-500', 'text-slate-950');
-                b.classList.add('text-slate-300');
-            });
-            document.getElementById(`pane-${tabName}`).classList.remove('hidden');
-            let activeBtn = document.getElementById(`tab-${tabName}`);
-            activeBtn.classList.add('active', 'bg-emerald-500', 'text-slate-950');
-            activeBtn.classList.remove('text-slate-300');
-        }
-
-        // --- ⭐ 明星賽球員選秀彈窗邏輯 ---
-        function openAllStarDraftModal() {
-            allStarPool = [
-                { name: "大谷翔平", pos: "指定打擊 (DH)", power: 99 },
-                { name: "王柏融", pos: "外野手 (OF)", power: 92 },
-                { name: "江坤宇", pos: "游擊手 (SS)", power: 88 },
-                { name: "吉力吉撈·鞏冠", pos: "捕手 (C)", power: 95 },
-                { name: "林立", pos: "二壘手 (2B)", power: 91 },
-                { name: "陳傑憲", pos: "外野手 (OF)", power: 90 },
-                { name: "王威晨", pos: "三壘手 (3B)", power: 87 },
-                { name: "古林睿煬", pos: "先發投手 (SP)", power: 96 }
-            ];
-            selectedAllStarIndices = [];
-            renderAllStarPool();
-            let modal = document.getElementById('allstar-draft-modal');
-            modal.classList.remove('hidden'); modal.classList.add('flex');
-        }
-
-        function closeAllStarDraftModal() {
-            let modal = document.getElementById('allstar-draft-modal');
-            modal.classList.add('hidden'); modal.classList.remove('flex');
-        }
-
-        function renderAllStarPool() {
-            let grid = document.getElementById('allstar-pool-grid');
-            grid.innerHTML = "";
-            allStarPool.forEach((star, idx) => {
-                let isSelected = selectedAllStarIndices.includes(idx);
-                let div = document.createElement('div');
-                div.className = `allstar-card bg-slate-900 border ${isSelected ? 'selected border-amber-500' : 'border-slate-800'} p-3 rounded-xl flex flex-col justify-between`;
-                div.setAttribute('onclick', `toggleAllStarSelection(${idx})`);
-                div.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-start mb-1">
-                            <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded">${star.pos}</span>
-                            <span class="text-xs font-mono font-bold text-amber-400">能力:${star.power}</span>
-                        </div>
-                        <div class="font-bold text-sm text-white mt-1">${star.name}</div>
-                    </div>
-                    <div class="mt-2 text-center text-[10px] font-bold ${isSelected ? 'text-amber-400' : 'text-slate-500'}">
-                        ${isSelected ? '✓ 已入選明星隊' : '點擊選取'}
-                    </div>
-                `;
-                grid.appendChild(div);
-            });
-
-            document.getElementById('selected-allstar-count').innerText = selectedAllStarIndices.length;
-            let confirmBtn = document.getElementById('confirm-allstar-btn');
-            if (selectedAllStarIndices.length === 3) {
-                confirmBtn.disabled = false;
-                confirmBtn.className = "flex-grow py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl text-sm transition-all shadow-lg cursor-pointer";
-                confirmBtn.innerText = "確認陣容，立即開打明星賽！";
-            } else {
-                confirmBtn.disabled = true;
-                confirmBtn.className = "flex-grow py-3 bg-slate-800 text-slate-500 font-bold rounded-xl text-sm transition-all cursor-not-allowed";
-                confirmBtn.innerText = `請選滿 3 位明星球員 (目前已選 ${selectedAllStarIndices.length} / 3)`;
-            }
-        }
-
-        function toggleAllStarSelection(idx) {
-            let pos = selectedAllStarIndices.indexOf(idx);
-            if (pos > -1) {
-                selectedAllStarIndices.splice(pos, 1);
-            } else {
-                if (selectedAllStarIndices.length >= 3) { alert('最多只能選 3 位明星球員！'); return; }
-                selectedAllStarIndices.push(idx);
-            }
-            renderAllStarPool();
-        }
-
-        function confirmAllStarDraft() {
-            if (selectedAllStarIndices.length !== 3) return;
-            gameState.chosenAllStars = selectedAllStarIndices.map(i => allStarPool[i]);
-            closeAllStarDraftModal();
-            startSpecialMatch('allstar');
-        }
-
-        // --- 🎭 啟動特殊賽事轉播 (明星賽 vs 引退賽) ---
-        function startSpecialMatch(type) {
-            gameState.matchType = type;
-            initAudio();
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
             
-            let awayName = type === 'allstar' ? "⭐ 明星紅隊 (球迷票選)" : "🏛️ 傳奇球星榮耀隊";
-            let homeName = type === 'allstar' ? "⭐ 明星白隊 (教練推薦)" : "🏛️ 效力球團現役代表隊";
+            const bgColor = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-indigo-600';
+            toast.className = `${bgColor} text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-semibold flex items-center gap-2 pointer-events-auto transition-all duration-300 transform -translate-y-4 opacity-0`;
+            
+            const icon = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info';
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('-translate-y-4', 'opacity-0');
+            }, 10);
 
-            document.getElementById('pregame-away-name').innerText = `🔵 ${awayName}`;
-            document.getElementById('pregame-home-name').innerText = `🔴 ${homeName}`;
-            document.getElementById('pregame-title').innerText = type === 'allstar' ? "2026 中華職棒明星對抗賽 暨 全壘打大賽" : "傳奇球星引退紀念賽 ── 永遠的背號盛典";
-            document.getElementById('pregame-header-tag').innerText = type === 'allstar' ? "⭐ 明星賽專屬轉播秀 ＆ 夢幻陣容介紹" : "🏛️ 引退賽感性致敬 ＆ 傳奇回顧";
-
-            document.getElementById('pregame-away-pitcher').innerText = "大谷翔平";
-            document.getElementById('pregame-home-pitcher').innerText = "山本由伸";
-
-            let lineupText = type === 'allstar' ? gameState.chosenAllStars.map(s => `<div>• ${s.name} (${s.pos})</div>`).join('') : "<div>• 傳奇球星引退代表打線</div>";
-            document.getElementById('pregame-away-lineup').innerHTML = lineupText;
-            document.getElementById('pregame-home-lineup').innerHTML = "<div>• 現役明星精銳打線</div>";
-
-            let analysisText = type === 'allstar' 
-                ? "「今天的明星賽眾星雲集，全壘打大賽重砲手將正面對決，帶給球迷最純粹的棒球饗宴！」"
-                : "「全場萬人淚灑球場，今天不只是勝負，更是向傳奇球星致敬的最溫馨感性夜晚。」";
-            document.getElementById('pregame-expert-analysis').innerText = analysisText;
-
-            let modal = document.getElementById('pregame-modal');
-            modal.classList.remove('hidden'); modal.classList.add('flex');
-
-            if (type === 'allstar') {
-                speakDistinctVoices("各位球迷朋友大家晚安！歡迎來到一年一度、星光熠熠的中華職棒明星賽！", "今天我們將見識到聯盟最強打線的火力大對決！");
-            } else {
-                speakDistinctVoices("各位喜愛棒球的朋友，今天是個感性且令人依依不捨的日子...", "讓我們一起用掌聲，向這位陪伴我們無數歲月的傳奇球星獻上最崇高的敬意。");
-            }
+            setTimeout(() => {
+                toast.classList.add('-translate-y-4', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
         }
 
-        function speakDistinctVoices(text1, text2) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                let voices = window.speechSynthesis.getVoices();
-                let v1 = voices[0] || null;
-                let v2 = voices[1] || voices[0] || null;
-
-                let u1 = new SpeechSynthesisUtterance(text1);
-                if (v1) u1.voice = v1; u1.lang = 'zh-TW'; u1.rate = 1.2; u1.pitch = 1.3;
-
-                let u2 = new SpeechSynthesisUtterance(text2);
-                if (v2) u2.voice = v2; u2.lang = 'zh-TW'; u2.rate = 0.9; u2.pitch = 0.7;
-
-                window.speechSynthesis.speak(u1);
-                window.speechSynthesis.speak(u2);
-            }
-        }
-
-        let audioCtx = null;
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
-
-        function playSound(type) {
-            initAudio();
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            if (type === 'hit') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(700, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.12);
-            } else if (type === 'homerun') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(900, audioCtx.currentTime);
-            } else {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(180, audioCtx.currentTime);
-            }
-            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.2);
-        }
-
-        function playFuriousCheerSong(teamName) {
-            initAudio();
-            let now = audioCtx.currentTime;
-            let notes = [523.25, 659.25, 783.99, 1046.50, 1174.66];
-            let times = [0, 0.12, 0.24, 0.36, 0.5];
-            notes.forEach((freq, idx) => {
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(freq, now + times[idx]);
-                gain.gain.setValueAtTime(0.25, now + times[idx]);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + times[idx] + 0.15);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(now + times[idx]);
-                osc.stop(now + times[idx] + 0.15);
+        function filterCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = btn.innerText.includes(cat === 'all' ? '全部商品' : cat) ? 
+                    "cat-btn bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold" : 
+                    "cat-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200";
             });
+            renderShopProducts();
         }
 
-        function changeUserTeam() {
-            userTeamIdx = parseInt(document.getElementById('team-selector').value);
-            document.getElementById('current-team-name').innerText = teams[userTeamIdx].name;
-            setupNextMatchup();
-        }
+        function renderShopProducts() {
+            const grid = document.getElementById('shop-product-grid');
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            grid.innerHTML = '';
 
-        function setupNextMatchup() {
-            if (seasonStage === "regular") {
-                let opponentIdx = (userTeamIdx + regularGameCount) % teams.length;
-                if (opponentIdx === userTeamIdx) opponentIdx = (opponentIdx + 1) % teams.length;
-                currentMatchup = regularGameCount % 2 === 0 ? { away: userTeamIdx, home: opponentIdx } : { away: opponentIdx, home: userTeamIdx };
-            }
-            updateScheduleInfo();
-        }
+            const filtered = products.filter(p => {
+                const matchCat = currentCategory === 'all' || p.category === currentCategory;
+                const matchSearch = p.name.toLowerCase().includes(searchVal);
+                return matchCat && matchSearch;
+            });
 
-        function simulateOtherMatches() {
-            if (seasonStage === "finished") return;
-            let activeTeams = teams.map((t, idx) => idx).filter(idx => idx !== userTeamIdx);
-            for (let i = 0; i < activeTeams.length; i += 2) {
-                if (i + 1 < activeTeams.length) {
-                    let t1 = activeTeams[i], t2 = activeTeams[i+1];
-                    let r1 = Math.floor(Math.random() * 7), r2 = Math.floor(Math.random() * 7);
-                    if (r1 === r2) r1++;
-                    if (r1 > r2) { teams[t1].wins++; teams[t2].losses++; }
-                    else { teams[t2].wins++; teams[t1].losses++; }
-                }
-            }
-            updateStandingsTable();
-            alert("⚡ 關站模擬完成！");
-        }
-
-        function expandLeague() {
-            if (teams.length >= 8) {
-                alert("聯盟已經擴編至 8 支球隊！");
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p class="col-span-3 text-center text-gray-400 py-12">找不到符合的商品</p>';
                 return;
             }
-            teams.push({ name: "台北拓荒者", wins: 0, losses: 0, ties: 0 });
-            teams.push({ name: "高雄鯨魚", wins: 0, losses: 0, ties: 0 });
-            updateStandingsTable();
-            alert("⚾ 聯盟擴編成功！規模擴大為 8 支球隊爭霸！");
-        }
 
-        function setStrategy(stratType) {
-            gameState.currentDefenseStrategy = stratType;
-            alert(stratType === 'infield_in' ? "🛡️ 已啟用【內野前趨防守】！" : "🔥 已啟用【強力拉打 Shift】！");
-        }
-
-        let pendingSpectate = false;
-        function startPreGameShow(spectate) {
-            initAudio();
-            pendingSpectate = spectate;
-            gameState.matchType = 'regular';
-
-            let awayName = teams[currentMatchup.away].name;
-            let homeName = teams[currentMatchup.home].name;
-
-            document.getElementById('pregame-away-name').innerText = `🔵 客場：${awayName}`;
-            document.getElementById('pregame-home-name').innerText = `🔴 主場：${homeName}`;
-            document.getElementById('pregame-title').innerText = `${awayName} vs ${homeName} 頂級決戰`;
-            document.getElementById('pregame-header-tag').innerText = "🎙️ 賽前轉播 Show ＆ 先發陣容介紹";
-
-            let pitchers = ['德保拉', '猛登', '古林睿煬', '克維斯', '魔鷹', '鋼龍', '江少慶', '黃子鵬'];
-            document.getElementById('pregame-away-pitcher').innerText = pitchers[Math.floor(Math.random() * pitchers.length)];
-            document.getElementById('pregame-home-pitcher').innerText = pitchers[Math.floor(Math.random() * pitchers.length)];
-
-            let battingList = ['1. 岳政華 (CF)', '2. 江坤宇 (SS)', '3. 詹子賢 (LF)', '4. 張志豪 (DH)', '5. 陳子豪 (RF)', '6. 王威晨 (3B)', '7. 許基宏 (1B)', '8. 高宇杰 (C)', '9. 岳東華 (2B)'];
-            document.getElementById('pregame-away-lineup').innerHTML = battingList.map(b => `<div>• ${b}</div>`).join('');
-            document.getElementById('pregame-home-lineup').innerHTML = battingList.map(b => `<div>• ${b}</div>`).join('');
-
-            let modal = document.getElementById('pregame-modal');
-            modal.classList.remove('hidden'); modal.classList.add('flex');
-
-            speakDistinctVoices("各位觀眾朋友，歡迎收看今日的賽前轉播與先發球員介紹。", "本場比賽將嚴格執行教練團防守佈陣與 2 次電視挑戰機制。");
-        }
-
-        function enterStadiumFromPreGame() {
-            let modal = document.getElementById('pregame-modal');
-            modal.classList.add('hidden'); modal.classList.remove('flex');
-            goToStadium(pendingSpectate);
-        }
-
-        function goToStadium(spectate) {
-            isSpectating = spectate;
-            document.getElementById('home-screen').classList.add('hidden');
-            document.getElementById('stadium-screen').classList.remove('hidden');
-            document.getElementById('stadium-screen').classList.add('flex');
-            
-            let awayName = gameState.matchType === 'allstar' ? "⭐ 明星紅隊" : gameState.matchType === 'retirement' ? "🏛️ 傳奇球星榮耀隊" : teams[currentMatchup.away].name;
-            let homeName = gameState.matchType === 'allstar' ? "⭐ 明星白隊" : gameState.matchType === 'retirement' ? "🏛️ 現役代表隊" : teams[currentMatchup.home].name;
-            
-            document.getElementById('name-away').innerText = awayName;
-            document.getElementById('name-home').innerText = homeName;
-            
-            resetGameState();
-            updateUI();
-
-            cheerInterval = setInterval(() => {
-                playFuriousCheerSong(homeName);
-            }, 8000);
-
-            if (isSpectating) {
-                spectateTimer = setInterval(() => {
-                    if (!gameState.gameOver) executeAtBat();
-                    else {
-                        clearInterval(spectateTimer);
-                        clearInterval(cheerInterval);
-                    }
-                }, 900);
-            }
-        }
-
-        function goToHome() {
-            if (spectateTimer) clearInterval(spectateTimer);
-            if (cheerInterval) clearInterval(cheerInterval);
-            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-
-            document.getElementById('stadium-screen').classList.add('hidden');
-            document.getElementById('stadium-screen').classList.remove('flex');
-            document.getElementById('home-screen').classList.remove('hidden');
-            simulateOtherMatches();
-            updateStandingsTable();
-            updateScheduleInfo();
-        }
-
-        function resetGameState() {
-            gameState = {
-                inning: 1, isTop: true, balls: 0, strikes: 0, outs: 0,
-                bases: [false, false, false],
-                awayScores: [0,0,0,0,0,0,0,0,0], homeScores: [0,0,0,0,0,0,0,0,0],
-                awayHits: 0, homeHits: 0, awayErrors: 0, homeErrors: 0,
-                gameOver: false, selectedZone: 5, reviewChances: 2, currentDefenseStrategy: 'normal',
-                matchType: gameState.matchType || 'regular'
-            };
-            document.getElementById('action-btn').disabled = false;
-            document.getElementById('review-count').innerText = 2;
-            
-            let roomTitle = "🎙️ 現場實況轉播室";
-            let t1 = "比賽正式開打！";
-            let t2 = "精彩的對決即將展開！";
-
-            if (gameState.matchType === 'allstar') {
-                roomTitle = "⭐ 明星賽特化轉播室 (全壘打狂歡慶典)";
-                t1 = "明星對抗賽全面開打！享受全壘打與球星美技的饗宴！";
-                t2 = "今天沒有勝負壓力，只有最強的火力釋放！";
-            } else if (gameState.matchType === 'retirement') {
-                roomTitle = "🏛️ 傳奇引退賽感性轉播室";
-                t1 = "引退紀念賽正式開打，全場溫馨感性致敬傳奇背號！";
-                t2 = "讓我們一起享受這位傳奇球星在球場上的最後英姿。";
-            }
-
-            document.getElementById('stadium-room-title').innerText = roomTitle;
-            addCommentary(t1); addCommentary(t2, 'expert');
-            speakDistinctVoices(t1, t2);
-            playFuriousCheerSong("兄弟");
-        }
-
-        function selectZone(zoneNum) {
-            gameState.selectedZone = zoneNum;
-            document.getElementById('selected-zone-text').innerText = zoneNum;
-        }
-
-        function updateUI() {
-            if (gameState.inning >= 10 && gameState.outs === 0 && !gameState.bases[1] && !gameState.bases[0]) {
-                gameState.bases[1] = true;
-                addCommentary("⚾ 【突破僵局制】進入延長賽第 10 局，無人出局二壘有人！", 'expert');
-            }
-
-            document.getElementById('game-info').innerText = `第 ${gameState.inning} 局 ${gameState.isTop ? '上' : '下'}`;
-            document.getElementById('count-s').innerText = gameState.strikes;
-            document.getElementById('count-b').innerText = gameState.balls;
-            document.getElementById('count-o').innerText = gameState.outs;
-
-            let isUserBatting = (gameState.isTop && currentMatchup.away === userTeamIdx) || (!gameState.isTop && currentMatchup.home === userTeamIdx);
-            let badge = document.getElementById('turn-badge');
-            let actionBtn = document.getElementById('action-btn');
-
-            if (isUserBatting || gameState.matchType !== 'regular') {
-                badge.innerText = gameState.matchType === 'allstar' ? "⭐ 明星賽火熱打擊" : gameState.matchType === 'retirement' ? "🏛️ 引退賽致敬打擊" : "🎯 輪到我方【打擊進攻】";
-                actionBtn.innerText = `揮棒打擊！ (落點: ${gameState.selectedZone})`;
-            } else {
-                badge.innerText = "🛡️ 輪到我方【防守投球】";
-                actionBtn.innerText = `確認投球！ (進壘點: ${gameState.selectedZone})`;
-            }
-
-            let isLoaded = gameState.bases[0] && gameState.bases[1] && gameState.bases[2];
-            let sbBox = document.getElementById('scoreboard-box');
-            if (isLoaded) sbBox.classList.add('bases-loaded-alert');
-            else sbBox.classList.remove('bases-loaded-alert');
-
-            for (let i = 1; i <= 3; i++) {
-                const baseEl = document.getElementById(`base-${i}`);
-                if (gameState.bases[i-1]) baseEl.className = "absolute w-3 h-3 bg-amber-400 rounded-sm shadow-md";
-                else baseEl.className = "absolute w-3 h-3 bg-slate-800 rounded-sm";
-            }
-
-            let awayRow = document.getElementById('row-away').cells;
-            let homeRow = document.getElementById('row-home').cells;
-            let totalAwayR = 0, totalHomeR = 0;
-            for (let i = 0; i < 9; i++) {
-                awayRow[i+1].innerText = gameState.awayScores[i];
-                homeRow[i+1].innerText = gameState.homeScores[i];
-                totalAwayR += gameState.awayScores[i];
-                totalHomeR += gameState.homeScores[i];
-            }
-            document.getElementById('r-away').innerText = totalAwayR;
-            document.getElementById('r-home').innerText = totalHomeR;
-            document.getElementById('h-away').innerText = gameState.awayHits;
-            document.getElementById('h-home').innerText = gameState.homeHits;
-
-            document.getElementById('mvp-tag').innerText = gameState.matchType === 'allstar' ? "🌟 明星賽 MVP 預測：球迷票選球星" : "🌟 引退賽英雄：傳奇球星";
-        }
-
-        function addCommentary(text, type = 'normal') {
-            const box = document.getElementById('commentary-box');
-            let colorClass = type === 'hit' ? 'text-emerald-400 font-bold' : type === 'hr' ? 'text-amber-300 font-black text-sm' : type === 'out' ? 'text-rose-400' : type === 'expert' ? 'text-blue-300 italic' : 'text-slate-300';
-            box.innerHTML += `<div class="${colorClass}">[${new Date().toLocaleTimeString()}] ${text}</div>`;
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function executeAtBat() {
-            if (gameState.gameOver) return;
-            
-            let zone = gameState.selectedZone;
-            let opponentZone = Math.floor(Math.random() * 9) + 1;
-            let attackerName = gameState.isTop ? "客場球隊" : "主場球隊";
-
-            if (gameState.matchType === 'allstar') {
-                attackerName = gameState.isTop ? "明星紅隊" : "明星白隊";
-            } else if (gameState.matchType === 'retirement') {
-                attackerName = gameState.isTop ? "傳奇榮耀隊" : "現役代表隊";
-            }
-
-            addCommentary(`🎯 【揮擊對決】選擇九宮格 [${zone}] (預判: [${opponentZone}])`);
-            
-            let rand = Math.random();
-            if (zone === opponentZone || gameState.matchType === 'allstar' && rand < 0.5) {
-                playSound('homerun');
-                playFuriousCheerSong("兄弟");
-                let t1 = gameState.matchType === 'retirement' ? `傳奇球星展現招牌神技，轟出全場歡呼的全壘打！` : `精準鎖定球路，轟出大牆的全壘打！`;
-                let t2 = "全場球迷陷入瘋狂，這球打得太漂亮了！";
-                addCommentary(`🚀 [${attackerName}] ${t1}`, 'hr'); addCommentary(t2, 'expert');
-                speakDistinctVoices(t1, t2);
-                if (gameState.isTop) gameState.awayHits++; else gameState.homeHits++;
-                scoreRuns(1 + gameState.bases.filter(Boolean).length);
-                gameState.bases = [false, false, false];
-                resetCount();
-            } else {
-                gameState.strikes++;
-                playSound('strike');
-                if (gameState.strikes >= 3) {
-                    let t1 = `揮棒落空，遭到三振！`;
-                    let t2 = "可惜差了一點點。";
-                    addCommentary(`[${attackerName}] ${t1}`, 'out'); addCommentary(t2, 'expert');
-                    speakDistinctVoices(t1, t2);
-                    nextBatter(true);
-                } else {
-                    let t1 = `揮擊落空，好球！`;
-                    let t2 = "繼續鎖定下一球。";
-                    addCommentary(`[${attackerName}] ${t1}`); addCommentary(t2, 'expert');
-                    speakDistinctVoices(t1, t2);
-                }
-            }
-            updateUI();
-        }
-
-        function resetCount() { gameState.balls = 0; gameState.strikes = 0; }
-        function nextBatter(isK) {
-            if (isK && gameState.strikes >= 3) { gameState.outs++; resetCount(); }
-            if (gameState.outs >= 3) switchInning();
-        }
-
-        function scoreRuns(count) {
-            let idx = Math.min(gameState.inning - 1, 8);
-            if (gameState.isTop) gameState.awayScores[idx] += count;
-            else gameState.homeScores[idx] += count;
-            
-            let t1 = `跑回本壘得分，灌進 ${count} 分！`;
-            let t2 = "火力全開！";
-            addCommentary(`🎉 ${t1}`, 'hit'); addCommentary(t2, 'expert');
-            speakDistinctVoices(t1, t2);
-        }
-
-        function triggerIntermissionAd() {
-            let ads = [
-                { title: "【極速超跑 台灣總代理】", content: "「人生就該有一輛屬於自己的極速超跑！即日起購車即享零頭款！」" },
-                { title: "【威爾斯棒球護具】", content: "「職業選手唯一指定，強打出擊無極限！」" }
-            ];
-            let chosenAd = ads[Math.floor(Math.random() * ads.length)];
-            document.getElementById('ad-title').innerText = chosenAd.title;
-            document.getElementById('ad-content').innerText = chosenAd.content;
-            
-            let modal = document.getElementById('ad-modal');
-            modal.classList.remove('hidden'); modal.classList.add('flex');
-
-            let countdown = 3;
-            let countSpan = document.getElementById('ad-countdown');
-            let skipBtn = document.getElementById('skip-ad-btn');
-            countSpan.innerText = countdown;
-            skipBtn.disabled = true;
-            skipBtn.className = "w-full py-3 bg-slate-800 text-slate-500 font-bold rounded-xl text-sm transition-all cursor-not-allowed";
-            skipBtn.innerText = "廣告播放中...";
-
-            let timer = setInterval(() => {
-                countdown--;
-                countSpan.innerText = countdown;
-                if (countdown <= 0) {
-                    clearInterval(timer);
-                    playerData.coins += 1500;
-                    document.getElementById('player-coins').innerText = playerData.coins;
-                    skipBtn.disabled = false;
-                    skipBtn.className = "w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl text-sm transition-all shadow-lg cursor-pointer";
-                    skipBtn.innerText = "關閉廣告，繼續比賽 ▶";
-                    skipBtn.onclick = () => {
-                        modal.classList.add('hidden'); modal.classList.remove('flex');
-                    };
-                }
-            }, 1000);
-        }
-
-        function switchInning() {
-            if (gameState.gameOver) return;
-            gameState.outs = 0;
-            resetCount();
-            gameState.bases = [false, false, false];
-            
-            if (gameState.matchType === 'regular') triggerIntermissionAd();
-
-            if (!gameState.isTop) gameState.inning++;
-            gameState.isTop = !gameState.isTop;
-
-            if (gameState.inning > 9) {
-                if (spectateTimer) clearInterval(spectateTimer);
-                if (cheerInterval) clearInterval(cheerInterval);
-                endGame();
-            } else {
-                let t1 = `進入第 ${gameState.inning} 局`;
-                let t2 = "比賽張力持續升溫。";
-                addCommentary(t1); addCommentary(t2, 'expert');
-                speakDistinctVoices(t1, t2);
-            }
-        }
-
-        function endGame() {
-            gameState.gameOver = true;
-            let t1 = gameState.matchType === 'allstar' ? "明星賽圓滿落幕！全壘打大賽嗨翻全場！" : gameState.matchType === 'retirement' ? "引退賽圓滿落幕，全場球迷淚眼相送傳奇背號！" : "比賽正式結束！";
-            let t2 = "感謝各位球迷的熱情支持！";
-            
-            addCommentary(`🏆 ${t1}`, 'hr'); addCommentary(t2, 'expert');
-            speakDistinctVoices(t1, t2);
-
-            document.getElementById('action-btn').disabled = true;
-            playerData.coins += 8000;
-            updateCoinsUI();
-        }
-
-        function updateStandingsTable() {
-            let tbody = document.getElementById('standings-tbody');
-            tbody.innerHTML = "";
-            let sorted = teams.map((t, idx) => {
-                let total = t.wins + t.losses + t.ties;
-                let pct = total > 0 ? (t.wins / total).toFixed(3) : ".000";
-                return { ...t, idx, pct: parseFloat(pct) };
-            }).sort((a,b)=>b.pct - a.pct || b.wins - a.wins);
-
-            sorted.forEach((t, index) => {
-                let tr = document.createElement('tr');
-                if (t.idx === userTeamIdx) tr.className = "bg-emerald-950/40 font-bold text-emerald-300";
-                tr.innerHTML = `
-                    <td class="text-left pl-3">${index + 1}. ${t.name} ${t.idx === userTeamIdx ? '(我方)' : ''}</td>
-                    <td class="text-amber-400 font-bold">${t.wins}</td>
-                    <td class="text-rose-400">${t.losses}</td>
-                    <td>${t.ties}</td>
-                    <td class="font-mono">${t.pct.toFixed(3).replace(/^0/, '')}</td>
-                    <td class="text-slate-400">-</td>
+            filtered.forEach(p => {
+                grid.innerHTML += `
+                    <div class="bg-white rounded-xl shadow-sm border p-4 flex flex-col justify-between">
+                        <div>
+                            <div class="bg-gray-100 h-48 rounded-lg flex items-center justify-center text-gray-400 mb-4">
+                                <i class="fa-solid ${p.icon || 'fa-box'} text-4xl"></i>
+                            </div>
+                            <div class="flex justify-between items-center text-xs text-gray-500 mb-1">
+                                <span class="bg-gray-100 px-2 py-0.5 rounded">${p.category}</span>
+                                <span><i class="fa-solid fa-star text-yellow-400"></i> ${p.rating || 5.0}</span>
+                            </div>
+                            <span class="text-xs text-indigo-600 font-semibold">賣家: ${p.seller}</span>
+                            <h3 class="font-bold text-gray-800 mt-1">${p.name}</h3>
+                            <p class="text-xs text-gray-400 mt-1">庫存: ${p.stock}</p>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between">
+                            <span class="text-lg font-bold text-indigo-600">NT$ ${p.price}</span>
+                            <button onclick="addToCart('${p.id}')" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">加入購物車</button>
+                        </div>
+                    </div>
                 `;
-                tbody.appendChild(tr);
             });
+            document.getElementById('stat-total-products').innerText = products.length;
+            document.getElementById('stat-total-users').innerText = users.length;
+            document.getElementById('stat-total-orders').innerText = salesRecords.length;
+        }
+
+        function openAuthModal(mode) {
+            authMode = mode;
+            document.getElementById('auth-modal-title').innerText = mode === 'login' ? '會員登入' : '會員註冊';
+            document.getElementById('auth-submit-btn').innerText = mode === 'login' ? '登入' : '註冊';
+            document.getElementById('auth-modal').classList.remove('hidden');
+        }
+        function closeAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); }
+        function switchAuthMode() { openAuthModal(authMode === 'login' ? 'register' : 'login'); }
+
+        function handleAuthSubmit(event) {
+            event.preventDefault();
+            const username = document.getElementById('auth-username').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+
+            if (authMode === 'register') {
+                if (users.find(u => u.username === username)) { showToast('帳號已被註冊！', 'error'); return; }
+                users.push({ username, password, phone: '', address: '', isVip: false, isBanned: false });
+                showToast('註冊成功！請登入。', 'success');
+                openAuthModal('login');
+                renderAdminUsers();
+            } else {
+                const user = users.find(u => u.username === username && u.password === password);
+                if (user) {
+                    if (user.isBanned) { showToast('此帳號已被管理員停權！', 'error'); return; }
+                    currentUser = user;
+                    updateAuthUI();
+                    closeAuthModal();
+                    showToast(`歡迎回來，${user.username}！`, 'success');
+                } else {
+                    showToast('帳號或密碼錯誤！', 'error');
+                }
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            updateAuthUI();
+            showToast('已登出。', 'info');
+        }
+
+        function updateAuthUI() {
+            const statusContainer = document.getElementById('user-auth-status');
+            const profileBtn = document.getElementById('profile-btn');
+            if (currentUser) {
+                const badge = currentUser.isVip ? '<span class="text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded ml-1">VIP</span>' : '';
+                statusContainer.innerHTML = `<span class="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">${currentUser.username}${badge}</span><button onclick="handleLogout()" class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold">登入/登出</button>`;
+                profileBtn.classList.remove('hidden');
+            } else {
+                statusContainer.innerHTML = `<button onclick="openAuthModal('login')" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold">登入</button><button onclick="openAuthModal('register')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">註冊</button>`;
+                profileBtn.classList.add('hidden');
+            }
+        }
+
+        function openVipModal() { document.getElementById('vip-modal').classList.remove('hidden'); }
+        function closeVipModal() { document.getElementById('vip-modal').classList.add('hidden'); }
+
+        function selectVipPlan(planName, price) {
+            if (!currentUser) { showToast('請先登入會員才能訂閱方案！', 'error'); closeVipModal(); openAuthModal('login'); return; }
+            
+            closeVipModal();
+            pendingCheckoutItem = { type: 'vip', name: planName, price: price };
+            
+            document.getElementById('buyer-realname').value = currentUser.username;
+            document.getElementById('buyer-phone').value = currentUser.phone || '';
+            document.getElementById('buyer-address').value = currentUser.address || '';
+            
+            document.getElementById('checkout-item-name').innerText = planName;
+            document.getElementById('checkout-item-price').innerText = `NT$ ${price}`;
+            document.getElementById('checkout-modal').classList.remove('hidden');
+        }
+
+        function openProfileModal() {
+            if (!currentUser) return;
+            document.getElementById('profile-phone').value = currentUser.phone || '';
+            document.getElementById('profile-address').value = currentUser.address || '';
+            document.getElementById('profile-vip-status').innerText = currentUser.isVip ? '🌟 尊爵 VIP 會員 (享 85 折優惠)' : '一般會員 (可點擊上方「會員方案」升級)';
+            
+            const tbody = document.getElementById('my-orders-table');
+            tbody.innerHTML = '';
+            const myOrders = salesRecords.filter(s => s.buyer === currentUser.username);
+            if (myOrders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400">尚無歷史訂單</td></tr>`;
+            } else {
+                myOrders.forEach(o => {
+                    tbody.innerHTML += `<tr class="border-b"><td class="p-3">${o.id}</td><td class="p-3">${o.productName} x${o.qty}</td><td class="p-3">NT$ ${o.totalPrice}</td><td class="p-3 font-bold text-indigo-600">${o.status}</td></tr>`;
+                });
+            }
+            document.getElementById('profile-modal').classList.remove('hidden');
+        }
+        function closeProfileModal() { document.getElementById('profile-modal').classList.add('hidden'); }
+
+        function updateProfileData(event) {
+            event.preventDefault();
+            currentUser.phone = document.getElementById('profile-phone').value;
+            currentUser.address = document.getElementById('profile-address').value;
+            showToast('個人資料已更新！', 'success');
+            closeProfileModal();
+        }
+
+        function addToCart(id) {
+            const p = products.find(item => item.id === id);
+            if (!p || p.stock <= 0) { showToast('商品已售完！', 'error'); return; }
+            const item = cart.find(i => i.id === id);
+            let finalPrice = currentUser && currentUser.isVip ? Math.round(p.price * 0.85) : p.price;
+            
+            if (item) { if (item.qty < p.stock) item.qty++; else { showToast('達到庫存上限', 'error'); return; } }
+            else { cart.push({ id: p.id, name: p.name, price: finalPrice, seller: p.seller, qty: 1 }); }
+            updateCartUI();
+            showToast(`已將 ${p.name} 加入購物車`, 'success');
+        }
+
+        function updateCartUI() {
+            document.getElementById('cart-count').innerText = cart.reduce((sum, i) => sum + i.qty, 0);
+            const container = document.getElementById('cart-items-container');
+            container.innerHTML = cart.length === 0 ? '<p class="text-center text-gray-400 py-6">購物車是空的</p>' : '';
+            let total = 0;
+            cart.forEach((i, idx) => {
+                total += i.price * i.qty;
+                container.innerHTML += `<div class="flex justify-between items-center bg-gray-50 p-3 rounded border text-sm"><div><strong>${i.name}</strong><p class="text-xs text-gray-500">NT$ ${i.price} x ${i.qty}</p></div><button onclick="cart.splice(${idx},1);updateCartUI();" class="text-red-500 text-xs"><i class="fa-solid fa-trash"></i></button></div>`;
+            });
+            document.getElementById('cart-total-price').innerText = `NT$ ${Math.round(total * discountRate)}`;
+        }
+
+        function toggleCartModal() { document.getElementById('cart-modal').classList.toggle('hidden'); }
+
+        function applyCoupon() {
+            const code = document.getElementById('coupon-input').value.trim();
+            if (code === 'SUMMER80') { discountRate = 0.8; showToast('成功套用 8 折優惠券！', 'success'); }
+            else { showToast('無效的折扣碼！', 'error'); discountRate = 1.0; }
+            updateCartUI();
+        }
+
+        function openCheckoutModalForCart() {
+            if (cart.length === 0) { showToast('購物車是空的', 'error'); return; }
+            if (!currentUser) { showToast('請先登入會員', 'error'); toggleCartModal(); openAuthModal('login'); return; }
+            
+            toggleCartModal();
+            let total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            let finalAmt = Math.round(total * discountRate);
+
+            pendingCheckoutItem = { type: 'cart', name: '購物車多項商品', price: finalAmt };
+
+            document.getElementById('buyer-realname').value = currentUser.username;
+            document.getElementById('buyer-phone').value = currentUser.phone || '';
+            document.getElementById('buyer-address').value = currentUser.address || '';
+
+            document.getElementById('checkout-item-name').innerText = '購物車商品結帳';
+            document.getElementById('checkout-item-price').innerText = `NT$ ${finalAmt}`;
+            document.getElementById('checkout-modal').classList.remove('hidden');
+        }
+
+        function closeCheckoutModal() { document.getElementById('checkout-modal').classList.add('hidden'); }
+
+        // 填好基本與付款資料後，透過 qrcode.js 產生真實的 QR Code
+        function generateQRCodeModal() {
+            const name = document.getElementById('buyer-realname').value.trim();
+            const phone = document.getElementById('buyer-phone').value.trim();
+            const address = document.getElementById('buyer-address').value.trim();
+
+            if (!name || !phone || !address) {
+                showToast('請完整填寫基本聯絡與收件資料！', 'error');
+                return;
+            }
+
+            currentUser.phone = phone;
+            currentUser.address = address;
+
+            closeCheckoutModal();
+
+            document.getElementById('qr-item-name').innerText = pendingCheckoutItem.name;
+            document.getElementById('qr-item-price').innerText = `NT$ ${pendingCheckoutItem.price}`;
+            document.getElementById('qr-buyer-name').innerText = `${name} (${phone})`;
+
+            // 清空舊的 QR Code 並用真實套件生成
+            const qrBox = document.getElementById('qrcode-box');
+            qrBox.innerHTML = '';
+            
+            const payUrl = `https://pay.future-tech.com/checkout?item=${encodeURIComponent(pendingCheckoutItem.name)}&price=${pendingCheckoutItem.price}&user=${encodeURIComponent(name)}`;
+            
+            new QRCode(qrBox, {
+                text: payUrl,
+                width: 150,
+                height: 150,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('qrcode-modal').classList.remove('hidden');
+        }
+
+        function closeQRCodeModal() { document.getElementById('qrcode-modal').classList.add('hidden'); }
+
+        function finishOrderProcess() {
+            const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+            const orderId = 'ORD' + Math.floor(1000 + Math.random() * 9000);
+
+            if (pendingCheckoutItem.type === 'vip') {
+                currentUser.isVip = true;
+                salesRecords.push({ id: orderId, time: now, productName: pendingCheckoutItem.name, seller: '官方商店', buyer: currentUser.username, qty: 1, totalPrice: pendingCheckoutItem.price, status: '已生效' });
+                showToast('付款成功！會員方案已立即生效！', 'success');
+                updateAuthUI();
+            } else {
+                cart.forEach(i => {
+                    const p = products.find(prod => prod.id === i.id);
+                    if (p) p.stock -= i.qty;
+                    salesRecords.push({ id: orderId, time: now, productName: i.name, seller: i.seller, buyer: currentUser.username, qty: i.qty, totalPrice: Math.round(i.price * i.qty * discountRate), status: '處理中' });
+                });
+                cart = [];
+                discountRate = 1.0;
+                updateCartUI();
+                showToast('付款成功！商品訂單已成立！', 'success');
+            }
+
+            closeQRCodeModal();
+            renderShopProducts();
+            renderAdminProducts();
+        }
+
+        function openSellModal() {
+            if (!currentUser) { showToast('請先登入', 'error'); openAuthModal('login'); return; }
+            document.getElementById('sell-modal').classList.remove('hidden');
+        }
+        function closeSellModal() { document.getElementById('sell-modal').classList.add('hidden'); }
+
+        function handleUserSell(event) {
+            event.preventDefault();
+            const category = document.getElementById('new-item-cat').value;
+            const name = document.getElementById('new-item-name').value.trim();
+            const price = Number(document.getElementById('new-item-price').value);
+            const stock = Number(document.getElementById('new-item-stock').value);
+            products.push({ id: 'P00' + (products.length + 1), name, category, seller: currentUser.username, price, stock, icon: 'fa-box-open', rating: 5.0 });
+            renderShopProducts();
+            renderAdminProducts();
+            closeSellModal();
+            showToast('商品上架成功！', 'success');
+        }
+
+        function openSellerDashboard() {
+            if (!currentUser) { showToast('請先登入', 'error'); openAuthModal('login'); return; }
+            const mySales = salesRecords.filter(s => s.seller === currentUser.username);
+            document.getElementById('seller-stat-products').innerText = products.filter(p => p.seller === currentUser.username).length;
+            document.getElementById('seller-stat-sales').innerText = mySales.length;
+            
+            const tbody = document.getElementById('seller-orders-table');
+            tbody.innerHTML = mySales.length === 0 ? `<tr><td colspan="5" class="p-4 text-center text-gray-400">尚無銷售紀錄</td></tr>` : '';
+            mySales.forEach(s => {
+                tbody.innerHTML += `<tr class="border-b"><td class="p-3">${s.id}</td><td class="p-3">${s.productName}</td><td class="p-3">${s.buyer}</td><td class="p-3 font-bold text-indigo-600">${s.status}</td><td class="p-3"><button onclick="shipOrder('${s.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px]">出貨</button></td></tr>`;
+            });
+            document.getElementById('seller-dashboard-modal').classList.remove('hidden');
+        }
+        function closeSellerDashboard() { document.getElementById('seller-dashboard-modal').classList.add('hidden'); }
+        function shipOrder(id) {
+            const order = salesRecords.find(s => s.id === id);
+            if (order) { order.status = '已出貨'; showToast('訂單已更新為已出貨', 'success'); openSellerDashboard(); }
+        }
+
+        function handleKeyLogin(event) {
+            event.preventDefault();
+            const id = document.getElementById('admin-id').value.trim();
+            const key = document.getElementById('secret-key').value.trim();
+            if (validAdmins[id] && validAdmins[id] === key) {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('shop-section').classList.add('hidden');
+                document.getElementById('admin-section').classList.remove('hidden');
+                showToast('管理員登入成功', 'success');
+            } else {
+                showToast('管理員 ID 或金鑰錯誤', 'error');
+            }
+        }
+
+        function renderAdminUsers() {
+            const tbody = document.getElementById('admin-user-table');
+            tbody.innerHTML = '';
+            users.forEach(u => {
+                const status = u.isBanned ? '<span class="text-red-600 font-bold">已停權</span>' : '<span class="text-green-600 font-bold">正常</span>';
+                const btnText = u.isBanned ? '解除停權' : '停權帳號';
+                const role = u.isVip ? 'VIP 會員' : '一般會員';
+                tbody.innerHTML += `<tr class="border-b"><td class="p-4 font-semibold">${u.username}</td><td class="p-4">${role}</td><td class="p-4">${status}</td><td class="p-4"><button onclick="toggleBan('${u.username}')" class="text-red-600 hover:underline text-xs">${btnText}</button></td></tr>`;
+            });
+        }
+
+        function toggleBan(username) {
+            const user = users.find(u => u.username === username);
+            if (user) {
+                user.isBanned = !user.isBanned;
+                renderAdminUsers();
+                showToast(`已${user.isBanned ? '停權' : '解除停權'}帳號：${username}`, 'success');
+                logAction(`管理員變更會員 ${username} 狀態為 ${user.isBanned ? '停權' : '正常'}`);
+            }
+        }
+
+        function saveAnnouncement() {
+            const text = document.getElementById('admin-banner-input').value.trim();
+            const banner = document.getElementById('announcement-banner');
+            const bannerText = document.getElementById('banner-text');
+            if (text) {
+                bannerText.innerText = text;
+                banner.classList.remove('hidden');
+                showToast('公告已成功發布！', 'success');
+            } else {
+                banner.classList.add('hidden');
+                showToast('公告已清除。', 'info');
+            }
+        }
+
+        function forceLogoutAll() {
+            currentUser = null;
+            updateAuthUI();
+            showToast('已強制所有前台使用者登出！', 'success');
+            logAction('管理員執行了強制全站登出');
+        }
+
+        function initAdminChart() {
+            const ctx = document.getElementById('adminChart').getContext('2d');
+            adminChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['週一', '週二', '週三', '週四', '週五', '週六', '週日'],
+                    datasets: [{
+                        label: '每日營業額 (NT$)',
+                        data: [12000, 19000, 15000, 25000, 22000, 34000, 42000],
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function renderAdminProducts() {
+            const tbody = document.getElementById('admin-product-table');
+            tbody.innerHTML = '';
+            products.forEach(p => {
+                tbody.innerHTML += `<tr class="border-b"><td class="p-4">${p.id}</td><td class="p-4 font-semibold">${p.name}</td><td class="p-4">${p.seller}</td><td class="p-4">NT$ ${p.price}</td><td class="p-4">${p.stock}</td><td class="p-4"><button onclick="removeProduct('${p.id}')" class="text-red-600 hover:underline">移除</button></td></tr>`;
+            });
+        }
+        function removeProduct(id) {
+            products = products.filter(p => p.id !== id);
+            renderShopProducts();
+            renderAdminProducts();
+            showToast('已移除商品', 'success');
+        }
+
+        function enterShopAsGuest() { document.getElementById('login-section').classList.add('hidden'); document.getElementById('shop-section').classList.remove('hidden'); }
+        function backToLogin() { document.getElementById('shop-section').classList.add('hidden'); document.getElementById('admin-section').classList.add('hidden'); document.getElementById('login-section').classList.remove('hidden'); }
+        function gotoShop() { document.getElementById('admin-section').classList.add('hidden'); document.getElementById('shop-section').classList.remove('hidden'); }
+
+        function switchTab(tabName) {
+            ['dashboard', 'users', 'announcement', 'crud', 'logs'].forEach(t => {
+                const tabEl = document.getElementById(`tab-${t}`);
+                const navEl = document.getElementById(`nav-${t}`);
+                if (tabEl) tabEl.classList.add('hidden');
+                if (navEl) navEl.className = "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 transition";
+            });
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabName}`).className = "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-indigo-600 text-white transition";
+            const titles = { 'dashboard': '營運儀表板', 'users': '會員黑名單管理', 'announcement': '網站公告設定', 'crud': '商品管理', 'logs': '系統日誌' };
+            document.getElementById('page-title').innerText = titles[tabName];
+            
+            if (tabName === 'dashboard' && adminChartInstance) {
+                adminChartInstance.resize();
+            }
+        }
+
+        function logAction(actionName) {
+            const container = document.getElementById('log-container');
+            if (!container) return;
+            const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+            container.prepend(Object.assign(document.createElement('div'), { innerText: `[${now}] ${actionName}` }));
         }
     </script>
 </body>
