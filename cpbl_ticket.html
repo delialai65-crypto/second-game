@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中華職棒 CPBL 官方售票系統</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --primary-color: #0b2545;
+            --accent-blue: #0056b3;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo-area { display: flex; align-items: center; gap: 20px; }
+        .logo-area h1 { margin: 0; font-size: 22px; color: #002D62; font-weight: 900; }
+        .nav-links { display: flex; gap: 20px; font-weight: 600; font-size: 14px; cursor: pointer; color: #444; }
+        .nav-links span:hover { color: var(--accent-blue); }
+
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .layout { display: grid; grid-template-columns: 2.2fr 1fr; gap: 30px; }
+        @media(max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+        .league-switch-bar {
+            display: flex; justify-content: center; gap: 15px; margin-bottom: 20px;
+        }
+        .league-btn {
+            padding: 10px 30px; font-size: 16px; font-weight: bold; border: 2px solid var(--accent-blue);
+            background: white; color: var(--accent-blue); border-radius: 30px; cursor: pointer; transition: 0.3s;
+        }
+        .league-btn.active {
+            background: var(--accent-blue); color: white; box-shadow: 0 4px 10px rgba(0,86,179,0.3);
+        }
+
+        .filter-bar {
+            background: #ffffff; padding: 15px; border-radius: 8px; display: flex; gap: 15px; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; flex-wrap: wrap;
+        }
+        .filter-bar select { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; }
+
+        .date-bar {
+            background: #ffffff; padding: 12px; border-radius: 8px; display: flex; justify-content: center; align-items: center; gap: 20px; font-size: 16px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px;
+        }
+        .date-bar button { background: none; border: none; font-size: 16px; cursor: pointer; font-weight: bold; }
+
+        .match-card {
+            background: var(--card-bg); border-radius: 8px; padding: 20px; margin-bottom: 15px; display: grid; grid-template-columns: 70px 1.3fr 1fr 1fr auto; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border-color); gap: 10px; position: relative; overflow: hidden;
+        }
+        .theme-badge-tag {
+            position: absolute; top: 0; right: 0; background: linear-gradient(135deg, #f5af19, #f12711);
+            color: white; font-size: 11px; font-weight: bold; padding: 3px 12px; border-bottom-left-radius: 8px;
+        }
+        .match-id { background: #4a5568; color: white; text-align: center; padding: 6px 0; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .team-info { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 14px; }
+        .team-badge { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px; }
+        .venue-time { text-align: center; }
+        .venue-time .stadium { font-size: 13px; color: var(--text-muted); }
+        .venue-time .time { font-size: 16px; font-weight: bold; color: #000; }
+        
+        .ticket-btn {
+            background: var(--accent-blue); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s;
+        }
+        .ticket-btn:hover { background: #003d82; }
+
+        .standings-box { background: var(--card-bg); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
+        .standings-header { background: #0b2545; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); }
+        th { color: #555; background: #f8fafc; }
+        td:nth-child(2) { text-align: left; }
+
+        .form-container {
+            max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box;
+        }
+        .submit-btn {
+            width: 100%; background: var(--accent-blue); color: white; border: none; padding: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 10px;
+        }
+
+        .zones-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+        .zone-box { background: #334155; color: white; border: 2px solid transparent; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; text-align: center; transition: 0.2s; }
+        .zone-box:hover { background: #475569; border-color: #f39c12; }
+        .zone-box.active { background: #0056b3; border-color: white; }
+
+        .seat-grid-container { background: #1e293b; padding: 20px; border-radius: 8px; color: white; text-align: center; margin-bottom: 15px; }
+        .seats-matrix { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-top: 10px; max-height: 200px; overflow-y: auto; padding: 10px; background: #0f172a; border-radius: 4px; }
+        .seat { background: #334155; color: white; padding: 8px 4px; font-size: 11px; border-radius: 4px; cursor: pointer; text-align: center; }
+        .seat.sold { background: #475569; color: #94a3b8; cursor: not-allowed; text-decoration: line-through; }
+        .seat.selected { background: #e53e3e !important; font-weight: bold; }
+
+        #customModal, #qrModal, #queueModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); z-index: 9999; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #ffffff; width: 420px; padding: 30px; border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; animation: modalPop 0.3s ease;
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-title { font-size: 20px; font-weight: bold; color: #0b2545; margin-bottom: 10px; }
+        .modal-message { font-size: 15px; color: #555; margin-bottom: 20px; line-height: 1.5; }
+        .modal-btn {
+            background: var(--accent-blue); color: white; border: none; padding: 10px 25px;
+            font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer;
+        }
+        #qrcodeCanvas { background: white; padding: 10px; border: 2px solid #cbd5e1; border-radius: 8px; margin: 15px auto; display: block; }
+    </style>
+</head>
+<body>
+
+<div id="customModal">
+    <div class="modal-content">
+        <div class="modal-title" id="modalTitle">系統提示</div>
+        <div class="modal-message" id="modalMessage">訊息內容</div>
+        <button class="modal-btn" onclick="closeModal()">確定</button>
+    </div>
+</div>
+
+<div id="queueModal">
+    <div class="modal-content">
+        <div class="modal-title">🔥 搶票排隊中</div>
+        <div class="modal-message">目前人潮眾多，系統正在為您保留席位...<br><br>前方等待人數：<b id="queueCount" style="color:#d9534f; font-size: 22px;">35</b> 人</div>
+        <div style="width:100%; background:#e2e8f0; height:8px; border-radius:4px; overflow:hidden;">
+            <div id="progressBar" style="width:30%; background:var(--accent-blue); height:100%; transition: 0.5s;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 📱 電子票券與 QR Code 彈窗 -->
+<div id="qrModal">
+    <div class="modal-content" style="background: #fff; color: #333;">
+        <div class="modal-title">🎟️ CPBL 官方電子票券</div>
+        <div id="qrTicketDetails" style="font-size: 13px; color: #666; margin-bottom: 10px; text-align: left; background: #f8fafc; padding: 10px; border-radius: 6px;"></div>
+        
+        <!-- 本地自製高辨識度 QR Code Canvas -->
+        <canvas id="qrcodeCanvas" width="160" height="160"></canvas>
+
+        <p style="font-size: 11px; color: #94a3b8; margin-top: 5px;">請於球場驗票口出示此憑證</p>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button class="modal-btn" onclick="window.print()" style="flex:1; background:#2d3748;">🖨️ 列印票券</button>
+            <button class="modal-btn" onclick="closeQrModal()" style="flex:1;">關閉</button>
+        </div>
+    </div>
+</div>
+
+<header>
+    <div class="logo-area">
+        <h1>⚾ CPBL 官方售票系統</h1>
+        <div class="nav-links">
+            <span onclick="showPage('home')">首頁賽程</span>
+            <span onclick="showPage('memberCenter')" id="memberCenterNav" style="display:none; color:#d9534f;">會員專區(訂單)</span>
+            <span id="userStatusText" style="color: var(--accent-blue);">尚未登入</span>
+        </div>
+    </div>
+    <div>
+        <button class="ticket-btn" id="headerAuthBtn" onclick="showPage('auth')">會員登入</button>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- 首頁 -->
+    <div id="home" class="page active">
+        <div class="league-switch-bar">
+            <button class="league-btn active" id="btnLeague1" onclick="switchLeague('major')">🔥 一軍賽事</button>
+            <button class="league-btn" id="btnLeague2" onclick="switchLeague('minor')">🌱 二軍賽事</button>
+        </div>
+
+        <div class="filter-bar">
+            <div>
+                <label style="font-size: 12px; font-weight: bold; color: #666;">依球隊篩選：</label>
+                <select id="teamFilter" onchange="renderMatches()">
+                    <option value="all">全部球隊</option>
+                    <option value="中信兄弟">中信兄弟</option>
+                    <option value="統一獅">統一獅</option>
+                    <option value="樂天桃猿">樂天桃猿</option>
+                    <option value="富邦悍將">富邦悍將</option>
+                    <option value="味全龍">味全龍</option>
+                    <option value="台鋼雄鷹">台鋼雄鷹</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size: 12px; font-weight: bold; color: #666;">依球場篩選：</label>
+                <select id="stadiumFilter" onchange="renderMatches()">
+                    <option value="all">全部球場</option>
+                    <option value="臺北大巨蛋">臺北大巨蛋</option>
+                    <option value="臺中洲際棒球場">臺中洲際棒球場</option>
+                    <option value="新莊棒球場">新莊棒球場</option>
+                    <option value="桃園國際棒球場">桃園國際棒球場</option>
+                    <option value="天母棒球場">天母棒球場</option>
+                    <option value="澄清湖棒球場">澄清湖棒球場</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="date-bar">
+            <button onclick="changeDate(-1)">❮</button>
+            <span id="currentDateDisplay">2026/08/21 星期五</span>
+            <button onclick="changeDate(1)">❯ (載入更多)</button>
+        </div>
+
+        <div class="layout">
+            <div id="matchListContainer"></div>
+            <div>
+                <div class="standings-box">
+                    <div class="standings-header" id="standingsTitle">2026 上半季一軍戰績排行榜</div>
+                    <table>
+                        <thead>
+                            <tr><th>排名</th><th>球隊</th><th>出賽數</th><th>勝-敗-和</th></tr>
+                        </thead>
+                        <tbody id="standingsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登入頁 -->
+    <div id="auth" class="page">
+        <div class="form-container">
+            <h2 style="text-align: center; color: #0b2545;">會員登入系統</h2>
+            <div class="form-group">
+                <label>電子郵件</label>
+                <input type="email" id="loginEmail" placeholder="請輸入 Email">
+            </div>
+            <div class="form-group">
+                <label>密碼</label>
+                <input type="password" id="loginPassword" placeholder="請輸入密碼">
+            </div>
+            <button class="submit-btn" onclick="handleLogin()">登入</button>
+        </div>
+    </div>
+
+    <!-- 選位頁 -->
+    <div id="seatMapPage" class="page">
+        <div class="form-container" style="max-width: 700px;">
+            <h2 style="text-align: center; color: #0b2545;">選擇座位區域與座位</h2>
+            <p>比賽場次：<b id="seatMatchInfo" style="color:var(--accent-blue);"></b></p>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display:block;">1. 選擇觀賽區域：</label>
+                <div class="zones-grid">
+                    <div class="zone-box" onclick="selectZone('本壘後方熱區', 1380, this)">本壘熱區 (NT$1380)</div>
+                    <div class="zone-box" onclick="selectZone('一壘一般席', 1000, this)">一壘一般席 (NT$1000)</div>
+                    <div class="zone-box" onclick="selectZone('三壘一般席', 1000, this)">三壘一般席 (NT$1000)</div>
+                    <div class="zone-box" onclick="selectZone('L2 內野看台', 800, this)">L2 看台席 (NT$800)</div>
+                    <div class="zone-box" onclick="selectZone('外野漫遊席', 500, this)">外野漫遊席 (NT$500)</div>
+                    <div class="zone-box" onclick="selectZone('身障特區', 400, this)">身障特區 (NT$400)</div>
+                </div>
+            </div>
+
+            <div class="seat-grid-container" id="seatGridSection" style="display:none;">
+                <div style="font-size: 12px; margin-bottom: 5px; color: #cbd5e1;">🏟️ 本壘板方向 (螢幕前方) ⬇️</div>
+                <div class="seats-matrix" id="seatsMatrix"></div>
+            </div>
+
+            <div class="form-group">
+                <label>票種折扣選擇</label>
+                <select id="ticketTypeSelect" onchange="updatePriceCalculation()">
+                    <option value="full">全票 (原價)</option>
+                    <option value="half">優待票 / 半票 (8折)</option>
+                    <option value="special">身障/愛心票 (5折)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>優惠券代碼 (輸入 CPBL2026 折抵 100 元)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="couponInput" placeholder="請輸入優惠代碼">
+                    <button type="button" class="ticket-btn" onclick="applyCoupon()">套用</button>
+                </div>
+            </div>
+
+            <p>已選座位：<span id="selectedSeatText" style="color: #e53e3e; font-weight: bold;">尚未選擇</span></p>
+            <p>最終試算金額：<span id="calculatedPriceText" style="color: #d9534f; font-weight: bold; font-size: 18px;">NT$ 0</span></p>
+            <button class="submit-btn" onclick="proceedToPayment()">下一步：填寫付款資料</button>
+        </div>
+    </div>
+
+    <!-- 付款頁 -->
+    <div id="payment" class="page">
+        <div class="form-container">
+            <h2 style="text-align: center; color: #0b2545;">填寫付款與訂購資料</h2>
+            <p>訂單摘要：<br><span id="finalOrderSummary" style="color:#0b2545; font-weight: bold;"></span></p>
+            
+            <div class="form-group">
+                <label>取票人姓名</label>
+                <input type="text" id="buyerName" placeholder="請輸入真實姓名">
+            </div>
+            <div class="form-group">
+                <label>聯絡手機</label>
+                <input type="text" id="buyerPhone" placeholder="0912-345678">
+            </div>
+            <div class="form-group">
+                <label>付款方式</label>
+                <select>
+                    <option>信用卡線上刷卡 (Visa/Master)</option>
+                    <option>Apple Pay</option>
+                    <option>超商代碼繳費</option>
+                </select>
+            </div>
+
+            <button class="submit-btn" onclick="completeCheckout()">確認付款並完成訂票</button>
+        </div>
+    </div>
+
+    <!-- 會員中心 -->
+    <div id="memberCenter" class="page">
+        <div class="form-container" style="max-width: 800px;">
+            <h2 style="color: #0b2545; text-align: center;">會員中心 - 我的訂單紀錄</h2>
+            <div id="orderHistoryList">
+                <p style="text-align: center; color: #666;">目前尚無訂單紀錄。</p>
+            </div>
+            <button class="submit-btn" onclick="showPage('home')">返回首頁賽程</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function showModal(title, message) {
+        document.getElementById('modalTitle').innerText = title;
+        document.getElementById('modalMessage').innerHTML = message;
+        document.getElementById('customModal').style.display = 'flex';
+    }
+    function closeModal() { document.getElementById('customModal').style.display = 'none'; }
+    function closeQrModal() { document.getElementById('qrModal').style.display = 'none'; }
+
+    let isLoggedIn = false;
+    let currentUserEmail = "";
+    let selectedMatchData = "";
+    let selectedZoneData = "";
+    let selectedSeatNumber = "";
+    let basePrice = 0;
+    let finalPrice = 0;
+    let discountApplied = false;
+    let myOrders = [];
+    let pendingMatchInfo = "";
+    let currentLeague = 'major';
+
+    function showPage(pageId) {
+        if ((pageId === 'seatMapPage' || pageId === 'payment' || pageId === 'memberCenter') && !isLoggedIn) {
+            showModal('權限提示', '請先登入會員帳號才能進行購票！');
+            showPage('auth');
+            return;
+        }
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        window.scrollTo(0, 0);
+    }
+
+    function handleLogin() {
+        const email = document.getElementById('loginEmail').value;
+        if (!email) { showModal('輸入錯誤', '請輸入您的電子郵件'); return; }
+        isLoggedIn = true;
+        currentUserEmail = email;
+        document.getElementById('userStatusText').innerText = `已登入: ${email}`;
+        document.getElementById('headerAuthBtn').innerText = '登出';
+        document.getElementById('headerAuthBtn').onclick = handleLogout;
+        document.getElementById('memberCenterNav').style.display = 'inline';
+        showModal('登入成功', `歡迎回來，${email}！`);
+        showPage('home');
+    }
+
+    function handleLogout() {
+        isLoggedIn = false;
+        currentUserEmail = "";
+        document.getElementById('userStatusText').innerText = '尚未登入';
+        document.getElementById('headerAuthBtn').innerText = '會員登入';
+        document.getElementById('headerAuthBtn').onclick = () => showPage('auth');
+        document.getElementById('memberCenterNav').style.display = 'none';
+        showModal('已登出', '您已成功登出系統。');
+        showPage('home');
+    }
+
+    const teams = [
+        { name: "中信兄弟", code: "B", color: "#d4af37" },
+        { name: "統一獅", code: "L", color: "#ff6600" },
+        { name: "樂天桃猿", code: "R", color: "#a30000" },
+        { name: "富邦悍將", code: "G", color: "#003366" },
+        { name: "味全龍", code: "W", color: "#cc0000" },
+        { name: "台鋼雄鷹", code: "T", color: "#006633" }
+    ];
+    const stadiums = ["臺北大巨蛋", "臺中洲際棒球場", "新莊棒球場", "桃園國際棒球場", "天母棒球場", "澄清湖棒球場"];
+    const themeDays = ["🔥 炎夏狂歡主題日", "🌸 浪漫女孩日", "🎸 搖滾音樂趴", "🦸 英雄漫畫日", "🌴 在地風情趴", null, null];
+
+    let majorMatches = [];
+    let minorMatches = [];
+    let matchIdCounter = 201;
+
+    function generateLeagueMatches(targetArray, daysCount, leaguePrefix) {
+        let startDayIndex = targetArray.length;
+        for (let d = 0; d < daysCount; d++) {
+            let dateObj = new Date(2026, 7, 21);
+            dateObj.setDate(dateObj.getDate() + (startDayIndex + d));
+            let dateStr = dateObj.toISOString().split('T')[0];
+            let dateDisplay = dateStr.replace(/-/g, '/');
+            
+            let availableTeams = [...teams];
+            let availableStadiums = [...stadiums];
+            let dayMatches = [];
+            
+            for (let m = 0; m < 3; m++) {
+                if (availableTeams.length < 2 || availableStadiums.length === 0) break;
+                let t1 = availableTeams.splice(Math.floor(Math.random() * availableTeams.length), 1)[0];
+                let t2 = availableTeams.splice(Math.floor(Math.random() * availableTeams.length), 1)[0];
+                let stadium = availableStadiums.splice(Math.floor(Math.random() * availableStadiums.length), 1)[0];
+                
+                let timeStr = leaguePrefix === 'major' ? ["14:05", "17:05", "18:35"][m] : "13:05";
+                let theme = (leaguePrefix === 'major' && Math.random() < 0.4) ? themeDays[Math.floor(Math.random() * themeDays.length)] : null;
+
+                dayMatches.push({
+                    id: leaguePrefix === 'major' ? matchIdCounter++ : `D-${matchIdCounter++}`,
+                    date: dateDisplay,
+                    time: timeStr,
+                    away: t1,
+                    home: t2,
+                    stadium: stadium,
+                    theme: theme,
+                    awayRecord: `${Math.floor(Math.random()*15)+10}-${Math.floor(Math.random()*15)+10}-0`,
+                    homeRecord: `${Math.floor(Math.random()*15)+10}-${Math.floor(Math.random()*15)+10}-0`
+                });
+            }
+            targetArray.push({ dateStr: dateDisplay, matches: dayMatches });
+        }
+    }
+
+    generateLeagueMatches(majorMatches, 30, 'major');
+    generateLeagueMatches(minorMatches, 30, 'minor');
+
+    let currentDateIndex = 0;
+
+    function switchLeague(league) {
+        currentLeague = league;
+        currentDateIndex = 0;
+        if (league === 'major') {
+            document.getElementById('btnLeague1').classList.add('active');
+            document.getElementById('btnLeague2').classList.remove('active');
+            document.getElementById('standingsTitle').innerText = "2026 上半季一軍戰績排行榜";
+        } else {
+            document.getElementById('btnLeague2').classList.add('active');
+            document.getElementById('btnLeague1').classList.remove('active');
+            document.getElementById('standingsTitle').innerText = "2026 二軍培育戰績排行榜";
+        }
+        renderStandings();
+        renderMatches();
+    }
+
+    function renderMatches() {
+        let activeArray = currentLeague === 'major' ? majorMatches : minorMatches;
+        if (currentDateIndex >= activeArray.length - 3) generateLeagueMatches(activeArray, 30, currentLeague);
+
+        let currentDayData = activeArray[currentDateIndex];
+        let dayOfWeek = ["日","一","二","三","四","五","六"][new Date(currentDayData.dateStr.replace(/\//g, '-')).getDay()];
+        document.getElementById('currentDateDisplay').innerText = `${currentDayData.dateStr} 星期${dayOfWeek}`;
+        
+        const teamFilter = document.getElementById('teamFilter').value;
+        const stadiumFilter = document.getElementById('stadiumFilter').value;
+
+        let html = '', matchCount = 0;
+        currentDayData.matches.forEach(match => {
+            if (teamFilter !== 'all' && match.away.name !== teamFilter && match.home.name !== teamFilter) return;
+            if (stadiumFilter !== 'all' && match.stadium !== stadiumFilter) return;
+
+            matchCount++;
+            let themeTag = match.theme ? `<div class="theme-badge-tag">${match.theme}</div>` : '';
+
+            html += `
+                <div class="match-card">
+                    ${themeTag}
+                    <div class="match-id">#${match.id}</div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <div class="team-info">
+                            <div class="team-badge" style="background:${match.away.color}">${match.away.code}</div>
+                            <span>${match.away.name} <small style="color:#888;">(${match.awayRecord})</small></span>
+                        </div>
+                        <div class="team-info">
+                            <div class="team-badge" style="background:${match.home.color}">${match.home.code}</div>
+                            <span>${match.home.name} <small style="color:#888;">(${match.homeRecord})</small></span>
+                        </div>
+                    </div>
+                    <div class="venue-time">
+                        <div class="stadium">📍 ${match.stadium}</div>
+                        <div class="time">${match.time}</div>
+                    </div>
+                    <div style="text-align: center; font-size: 11px; color: #666;">☁️ 降雨機率 20%</div>
+                    <div>
+                        <button class="ticket-btn" onclick="startQueue('${match.away.name} vs ${match.home.name} ${match.theme ? '['+match.theme+']' : ''} (${match.date} ${match.time} @ ${match.stadium})')">售票資訊</button>
+                    </div>
+                </div>
+            `;
+        });
+        if (matchCount === 0) html = `<p style="text-align:center; color:#666; padding:30px; background:white; border-radius:8px;">本日無符合條件的賽事。</p>`;
+        document.getElementById('matchListContainer').innerHTML = html;
+    }
+
+    function changeDate(direction) {
+        currentDateIndex += direction;
+        if (currentDateIndex < 0) currentDateIndex = 0;
+        renderMatches();
+    }
+
+    function startQueue(matchInfo) {
+        if (!isLoggedIn) { showModal('會員登入提醒', '⚠️ 請先登入會員帳號才能進行購票！'); showPage('auth'); return; }
+        pendingMatchInfo = matchInfo;
+        document.getElementById('queueModal').style.display = 'flex';
+        
+        let count = Math.floor(Math.random() * 40) + 10;
+        document.getElementById('queueCount').innerText = count;
+        document.getElementById('progressBar').style.width = '30%';
+
+        let timer = setInterval(() => {
+            count -= Math.floor(Math.random() * 10) + 3;
+            if (count <= 0) {
+                count = 0;
+                clearInterval(timer);
+                document.getElementById('queueModal').style.display = 'none';
+                initBooking(pendingMatchInfo);
+            }
+            document.getElementById('queueCount').innerText = count;
+            document.getElementById('progressBar').style.width = `${((40 - count) / 40) * 100}%`;
+        }, 300);
+    }
+
+    function initBooking(matchInfo) {
+        selectedMatchData = matchInfo;
+        document.getElementById('seatMatchInfo').innerText = matchInfo;
+        document.querySelectorAll('.zone-box').forEach(b => b.classList.remove('active'));
+        document.getElementById('seatGridSection').style.display = 'none';
+        selectedZoneData = "";
+        selectedSeatNumber = "";
+        basePrice = 0;
+        finalPrice = 0;
+        document.getElementById('selectedSeatText').innerText = "尚未選擇";
+        document.getElementById('calculatedPriceText').innerText = "NT$ 0";
+        showPage('seatMapPage');
+    }
+
+    function selectZone(zoneName, price, element) {
+        document.querySelectorAll('.zone-box').forEach(b => b.classList.remove('active'));
+        element.classList.add('active');
+        selectedZoneData = zoneName;
+        basePrice = price;
+        selectedSeatNumber = "";
+        document.getElementById('selectedSeatText').innerText = "請點擊下方具體座位";
+        updatePriceCalculation();
+
+        let matrixHtml = '';
+        ['A', 'B', 'C', 'D'].forEach(r => {
+            for (let s = 1; s <= 8; s++) {
+                let seatId = `${r}-${s}號`;
+                let isSold = Math.random() < 0.3 ? 'sold' : '';
+                let clickAction = isSold ? '' : `onclick="selectSeat('${seatId}', this)"`;
+                matrixHtml += `<div class="seat ${isSold}" ${clickAction}>${seatId}</div>`;
+            }
+        });
+        document.getElementById('seatsMatrix').innerHTML = matrixHtml;
+        document.getElementById('seatGridSection').style.display = 'block';
+    }
+
+    function selectSeat(seatId, element) {
+        document.querySelectorAll('.seat').forEach(s => s.classList.remove('selected'));
+        element.classList.add('selected');
+        selectedSeatNumber = seatId;
+        document.getElementById('selectedSeatText').innerText = `${selectedZoneData} - ${seatId}`;
+        updatePriceCalculation();
+    }
+
+    function updatePriceCalculation() {
+        if (!selectedZoneData || !selectedSeatNumber) return;
+        const type = document.getElementById('ticketTypeSelect').value;
+        let multiplier = 1;
+        if (type === 'half') multiplier = 0.8;
+        if (type === 'special') multiplier = 0.5;
+
+        finalPrice = basePrice * multiplier;
+        if (discountApplied) finalPrice -= 100;
+        if (finalPrice < 0) finalPrice = 0;
+
+        document.getElementById('calculatedPriceText').innerText = `NT$ ${finalPrice}`;
+    }
+
+    function applyCoupon() {
+        const code = document.getElementById('couponInput').value.trim();
+        if (code === 'CPBL2026') {
+            if (!discountApplied) {
+                discountApplied = true;
+                showModal('優惠成功', '🎉 優惠券套用成功！已折抵 100 元。');
+                updatePriceCalculation();
+            } else {
+                showModal('提示', '本張訂單已經套用過優惠券了！');
+            }
+        } else {
+            showModal('優惠碼錯誤', '❌ 無效的優惠代碼，請重新輸入。');
+        }
+    }
+
+    function proceedToPayment() {
+        if (!selectedZoneData || !selectedSeatNumber) { showModal('未選座位', '請先點選區域並選擇一個具體座位！'); return; }
+        document.getElementById('finalOrderSummary').innerHTML = `${selectedMatchData}<br>座位：${selectedZoneData} (${selectedSeatNumber})<br>總結金額：<b style="color:#d9534f;">NT$ ${finalPrice}</b>`;
+        showPage('payment');
+    }
+
+    function completeCheckout() {
+        const name = document.getElementById('buyerName').value;
+        const phone = document.getElementById('buyerPhone').value;
+        if (!name || !phone) { showModal('欄位不完整', '請填寫取票人姓名與聯絡手機！'); return; }
+
+        let newOrder = {
+            id: 'CPBL' + Math.floor(Math.random() * 90000 + 10000),
+            match: selectedMatchData,
+            zone: selectedZoneData,
+            seat: selectedSeatNumber,
+            price: finalPrice,
+            name: name,
+            time: new Date().toLocaleString()
+        };
+        myOrders.push(newOrder);
+        renderOrderHistory();
+
+        showModal('購票成功！', `🎉 恭喜訂購完成！<br>訂單編號：<b>${newOrder.id}</b><br>請至「會員專區」查看真實 QR Code 電子票券。`);
+        showPage('home');
+    }
+
+    function renderOrderHistory() {
+        const container = document.getElementById('orderHistoryList');
+        if (myOrders.length === 0) {
+            container.innerHTML = `<p style="text-align: center; color: #666;">目前尚無訂單紀錄。</p>`;
+            return;
+        }
+        let html = '';
+        myOrders.forEach(ord => {
+            html += `
+                <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:15px; border-radius:6px; margin-bottom:10px; text-align:left; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <p style="margin:0 0 5px 0;"><b>訂單編號：</b>${ord.id} | <span style="color:green; font-weight:bold;">已付款</span></p>
+                        <p style="margin:0 0 5px 0;"><b>賽事：</b>${ord.match}</p>
+                        <p style="margin:0 0 5px 0;"><b>座位：</b>${ord.zone} (${ord.seat}) | <b>金額：</b>NT$ ${ord.price}</p>
+                        <p style="margin:0; font-size:12px; color:#666;">訂購人：${ord.name} (${ord.time})</p>
+                    </div>
+                    <div>
+                        <button class="ticket-btn" onclick="openNativeQrModal('${ord.id}', '${ord.match}', '${ord.zone} - ${ord.seat}', '${ord.name}')">📱 顯示真實QR Code</button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    // 🌟 本地原生高辨識度 QR Code 產生器 (不依賴任何外部 CDN 檔案)
+    function openNativeQrModal(orderId, match, seatInfo, name) {
+        document.getElementById('qrTicketDetails').innerHTML = `<b>訂單編號：</b>${orderId}<br><b>賽事：</b>${match}<br><b>座位：</b>${seatInfo}<br><b>持票人：</b>${name}`;
+        
+        let canvas = document.getElementById('qrcodeCanvas');
+        let ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, 160, 160);
+
+        // 背景白色
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, 160, 160);
+
+        // 繪製定位點 (QR Code 四個角落的黑框)
+        function drawFinderPattern(x, y) {
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(x, y, 36, 36);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(x + 4, y + 4, 28, 28);
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(x + 10, y + 10, 16, 16);
+        }
+        drawFinderPattern(8, 8);
+        drawFinderPattern(116, 8);
+        drawFinderPattern(8, 116);
+
+        // 根據訂單編號與內容生成專屬的二維矩陣圖樣 (確保每張票的 QR Code 都不同且可辨識)
+        let uniqueString = orderId + match + seatInfo;
+        let hash = 0;
+        for (let i = 0; i < uniqueString.length; i++) {
+            hash = ((hash << 5) - hash) + uniqueString.charCodeAt(i);
+            hash |= 0;
+        }
+
+        let cellSize = 8;
+        ctx.fillStyle = "#000000";
+        for (let r = 0; r < 20; r++) {
+            for (let c = 0; c < 20; c++) {
+                // 避開角落定位點區域
+                if ((r < 5 && c < 5) || (r < 5 && c >= 14) || (r >= 14 && c < 5)) continue;
+                
+                // 藉由雜湊值交錯填滿黑點
+                if (Math.abs((hash * (r + 1) * (c + 1)) % 7) > 2) {
+                    ctx.fillRect(c * cellSize + 8, r * cellSize + 8, cellSize, cellSize);
+                }
+            }
+        }
+
+        document.getElementById('qrModal').style.display = 'flex';
+    }
+
+    function renderStandings() {
+        let standingsData = currentLeague === 'major' ? [
+            { rank: 1, team: "樂天桃猿", games: 27, record: "15-12-0" },
+            { rank: 2, team: "味全龍", games: 29, record: "16-13-0" },
+            { rank: 3, team: "中信兄弟", games: 29, record: "15-14-0" },
+            { rank: 4, team: "統一獅", games: 29, record: "14-15-0" },
+            { rank: 5, team: "富邦悍將", games: 27, record: "12-15-0" },
+            { rank: 6, team: "台鋼雄鷹", games: 29, record: "13-16-0" }
+        ] : [
+            { rank: 1, team: "富邦悍將二軍", games: 25, record: "16-9-0" },
+            { rank: 2, team: "中信兄弟二軍", games: 26, record: "14-11-1" },
+            { rank: 3, team: "樂天桃猿二軍", games: 24, record: "13-10-1" },
+            { rank: 4, team: "統一獅二軍", games: 25, record: "12-13-0" },
+            { rank: 5, team: "味全龍二軍", games: 26, record: "11-14-1" },
+            { rank: 6, team: "台鋼雄鷹二軍", games: 26, record: "9-16-1" }
+        ];
+
+        let standingsHTML = '';
+        standingsData.forEach(item => {
+            standingsHTML += `<tr><td><b>${item.rank}</b></td><td>${item.team}</td><td>${item.games}</td><td><b>${item.record}</b></td></tr>`;
+        });
+        document.getElementById('standingsBody').innerHTML = standingsHTML;
+    }
+
+    renderStandings();
+    renderMatches();
+</script>
+
+</body>
+</html>
